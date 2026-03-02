@@ -85,10 +85,10 @@ class DatabaseSeeder extends Seeder
 
         
         DB::table('brands')->insert([
-            ['brand_name'=>'Yamaha','logo_url'=>'images/brands/yamaha.png','website'=>'https://yamaha.com','created_at'=>now(),'updated_at'=>now()],
-            ['brand_name'=>'Fender','logo_url'=>'images/brands/fender.png','website'=>'https://fender.com','created_at'=>now(),'updated_at'=>now()],
-            ['brand_name'=>'Gibson','logo_url'=>'images/brands/gibson.png','website'=>'https://gibson.com','created_at'=>now(),'updated_at'=>now()],
-            ['brand_name'=>'Kawai','logo_url'=>'images/brands/kawai.png','website'=>'https://kawai-global.com','created_at'=>now(),'updated_at'=>now()],
+            ['brand_name'=>'Yamaha','logo_url'=>'images/brands/yamaha.jpg','website'=>'https://yamaha.com','created_at'=>now(),'updated_at'=>now()],
+            ['brand_name'=>'Fender','logo_url'=>'images/brands/fender.jpg','website'=>'https://fender.com','created_at'=>now(),'updated_at'=>now()],
+            ['brand_name'=>'Gibson','logo_url'=>'images/brands/gibson.jpg','website'=>'https://gibson.com','created_at'=>now(),'updated_at'=>now()],
+            ['brand_name'=>'Kawai','logo_url'=>'images/brands/kawai.jpg','website'=>'https://kawai-global.com','created_at'=>now(),'updated_at'=>now()],
         ]);
 
        
@@ -183,6 +183,25 @@ class DatabaseSeeder extends Seeder
     }
 }
 
+/*
+
+resources/views/admin/
+├── dashboard.blade.php
+├── accounts/
+│   ├── index.blade.php  (formerly accounts.blade.php)
+│   ├── create.blade.php
+│   ├── edit.blade.php
+│   └── show.blade.php
+├── brands/
+│   ├── index.blade.php
+│   ├── create.blade.php
+│   └── ...
+├── categories/
+│   └── ...
+└── products/
+    └── ...
+
+*/
 
 /*
 

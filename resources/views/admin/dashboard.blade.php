@@ -18,6 +18,8 @@
     <li><a href="/admin/employees">Employees</a></li>
     <li><a href="/admin/positions">Positions</a></li>
     <li><a href="/admin/expenses">Expenses</a></li>
+    <li><a href="/admin/salaries">Salaries</a></li>
+    <li><a href="/admin/brands">Brands</a></li>
     <li><a href="/admin/reports">Reports</a></li>
 </ul>
 
