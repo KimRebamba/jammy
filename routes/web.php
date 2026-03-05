@@ -2,14 +2,38 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CustomerHomeController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Route;
 
-
+Route::view('/', 'home');
 Route::get('/home', [AuthCOntroller::class, 'home']);
 
 Route::middleware(['guest.custom'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin']);
     Route::post('/login', [AuthController::class, 'login']);
+});
+
+Route::middleware(['customer'])->group(function(){
+    Route::get('/customer/index', [CustomerHomeController::class, 'index']);
+
+    Route::get('/customer/profile', [ProfileController::class, 'show']);
+    Route::get('/customer/profile/edit', [ProfileController::class, 'edit']);
+
+    Route::get('/shop', [ProductController::class, 'categories']);
+    Route::get('/shop/categories/{category}', [ProductController::class, 'brandsForCategory']);
+    Route::get('/shop/categories/{category}/brands/{brand}', [ProductController::class, 'productsForBrandAndCategory']);
+
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+
+    Route::get('/reviews', [ReviewController::class, 'index']);
+
+    Route::get('/cart', [CartController::class, 'index']);
 });
 
 Route::middleware(['admin'])->group(function () {

@@ -54,7 +54,7 @@ class AuthController extends Controller
         } 
         
         if ($user->role === 'customer') {
-            return redirect('/home');
+            return redirect('/customer/index');
         }
 
         return redirect('/home');
