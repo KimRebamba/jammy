@@ -132,7 +132,7 @@ return new class extends Migration
             $table->timestamp('date_ordered')->useCurrent();
             $table->enum('payment_status', ['pending','paid','refunded'])->default('pending');
             $table->enum('order_status', ['pending','processing','shipped','completed','cancelled','requested_refund','returned'])->default('pending');
-            $table->string('payment_option')->nullable();
+            $table->enum('payment_option', ['GCash','Maya','Cash on Delivery'])->default('Cash on Delivery');
             $table->decimal('delivery_fee', 12, 2)->default(0);
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();

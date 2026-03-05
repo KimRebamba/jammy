@@ -51,10 +51,41 @@
     <p>Primary Photo (800x800):
         <input type="file" name="photo_url">
     </p>
+    <p>Additional Photos (800x800):
+        <input type="file" name="additional_photos[]" multiple>
+    </p>
     <p>Active: <input type="checkbox" name="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }}></p>
 
     <p><button type="submit">Save Changes</button></p>
 </form>
+
+<h3>Existing Photos</h3>
+@if(count($photos) > 0)
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Image</th>
+            <th>Primary</th>
+            <th>Sort Order</th>
+            <th>Actions</th>
+        </tr>
+        @foreach($photos as $photo)
+            <tr>
+                <td><img src="{{ asset($photo->photo_url) }}" width="80"></td>
+                <td>{{ $photo->is_primary ? 'Yes' : 'No' }}</td>
+                <td>{{ $photo->sort_order }}</td>
+                <td>
+                    <form action="/admin/products/{{ $product->product_id }}/photos/{{ $photo->product_photo_id }}/delete" method="post" style="display:inline;">
+                        @csrf
+                        <button type="submit">Delete</button>
+                    </form>
+                    <a href="/admin/products/{{ $product->product_id }}/photos/{{ $photo->product_photo_id }}/replace" style="margin-left:5px;">Replace</a>
+                </td>
+            </tr>
+        @endforeach
+    </table>
+@else
+    <p>No photos for this product yet.</p>
+@endif
 
 <p><a href="/admin/products">Back to Products</a></p>
 

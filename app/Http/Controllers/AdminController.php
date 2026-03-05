@@ -173,6 +173,7 @@ class AdminController extends Controller
                 'p.product_name as Product',
                 'b.brand_name as Brand',
                 'c.category_name as Category',
+                'p.model as Model',
                 'p.retail_price as Price',
                 'p.stock_level as Stock',
                 'pp.photo_url as Image'
@@ -203,6 +204,7 @@ class AdminController extends Controller
             'is_active' => 'nullable|boolean',
             'stock_level' => 'required|integer',
             'photo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'additional_photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
         ]);
 
         $productId = DB::table('products')->insertGetId([
@@ -238,6 +240,33 @@ class AdminController extends Controller
             ]);
         }
 
+        if ($request->hasFile('additional_photos')) {
+            $currentSort = DB::table('product_photos')
+                ->where('product_id', $productId)
+                ->max('sort_order');
+            if ($currentSort === null) {
+                $currentSort = 0;
+            }
+
+            foreach ($request->file('additional_photos') as $file) {
+                if (!$file) {
+                    continue;
+                }
+                $filename = uniqid('product_', true) . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('images/products'), $filename);
+
+                $currentSort++;
+                DB::table('product_photos')->insert([
+                    'product_id' => $productId,
+                    'photo_url' => 'images/products/' . $filename,
+                    'is_primary' => 0,
+                    'sort_order' => $currentSort,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
         return redirect('/admin/products')->with('success', 'Product created successfully');
     }
 
@@ -263,7 +292,13 @@ class AdminController extends Controller
             return redirect('/admin/products')->with('error', 'Product not found');
         }
 
-        return view('admin.products.show', compact('product'));
+        $photos = DB::table('product_photos')
+            ->where('product_id', $id)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('admin.products.show', compact('product', 'photos'));
     }
 
     public function productsEdit($id)
@@ -278,10 +313,16 @@ class AdminController extends Controller
             ->where('is_primary', true)
             ->first();
 
+        $photos = DB::table('product_photos')
+            ->where('product_id', $id)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->get();
+
         $brands = DB::table('brands')->orderBy('brand_name')->get();
         $categories = DB::table('categories')->orderBy('category_name')->get();
 
-        return view('admin.products.edit', compact('product', 'primaryPhoto', 'brands', 'categories'));
+        return view('admin.products.edit', compact('product', 'primaryPhoto', 'brands', 'categories', 'photos'));
     }
 
     public function productsUpdate(Request $request, $id)
@@ -302,6 +343,7 @@ class AdminController extends Controller
             'is_active' => 'nullable|boolean',
             'stock_level' => 'required|integer',
             'photo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'additional_photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
         ]);
 
         DB::table('products')->where('product_id', $id)->update([
@@ -350,6 +392,33 @@ class AdminController extends Controller
             }
         }
 
+        if ($request->hasFile('additional_photos')) {
+            $currentSort = DB::table('product_photos')
+                ->where('product_id', $id)
+                ->max('sort_order');
+            if ($currentSort === null) {
+                $currentSort = 0;
+            }
+
+            foreach ($request->file('additional_photos') as $file) {
+                if (!$file) {
+                    continue;
+                }
+                $filename = uniqid('product_', true) . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('images/products'), $filename);
+
+                $currentSort++;
+                DB::table('product_photos')->insert([
+                    'product_id' => $id,
+                    'photo_url' => 'images/products/' . $filename,
+                    'is_primary' => 0,
+                    'sort_order' => $currentSort,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
         return redirect('/admin/products')->with('success', 'Product updated successfully');
     }
 
@@ -362,6 +431,92 @@ class AdminController extends Controller
 
         DB::table('products')->where('product_id', $id)->delete();
         return redirect('/admin/products')->with('success', 'Product deleted successfully');
+    }
+
+    public function productPhotoDelete($productId, $photoId)
+    {
+        $photo = DB::table('product_photos')->where('product_photo_id', $photoId)->first();
+        if (!$photo || $photo->product_id != $productId) {
+            return redirect('/admin/products/' . $productId . '/edit')->with('error', 'Photo not found');
+        }
+
+        DB::table('product_photos')->where('product_photo_id', $photoId)->delete();
+
+        return redirect('/admin/products/' . $productId . '/edit')->with('success', 'Photo deleted successfully');
+    }
+
+    public function productPhotoReplaceForm($productId, $photoId)
+    {
+        $product = DB::table('products')->where('product_id', $productId)->first();
+        if (!$product) {
+            return redirect('/admin/products')->with('error', 'Product not found');
+        }
+
+        $photo = DB::table('product_photos')->where('product_photo_id', $photoId)->first();
+        if (!$photo || $photo->product_id != $productId) {
+            return redirect('/admin/products/' . $productId . '/edit')->with('error', 'Photo not found');
+        }
+
+        return view('admin.products.photo_replace', compact('product', 'photo'));
+    }
+
+    public function productPhotoReplace(Request $request, $productId, $photoId)
+    {
+        $photo = DB::table('product_photos')->where('product_photo_id', $photoId)->first();
+        if (!$photo || $photo->product_id != $productId) {
+            return redirect('/admin/products/' . $productId . '/edit')->with('error', 'Photo not found');
+        }
+
+        $data = $request->validate([
+            'photo_file' => 'required|image|mimes:jpeg,png,jpg,gif|max:4096',
+        ]);
+
+        $file = $request->file('photo_file');
+        $filename = uniqid('product_', true) . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('images/products'), $filename);
+        $photoPath = 'images/products/' . $filename;
+
+        DB::table('product_photos')->where('product_photo_id', $photoId)->update([
+            'photo_url' => $photoPath,
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/products/' . $productId . '/edit')->with('success', 'Photo replaced successfully');
+    }
+
+    public function productPhotoAdd(Request $request, $productId)
+    {
+        $product = DB::table('products')->where('product_id', $productId)->first();
+        if (!$product) {
+            return redirect('/admin/products')->with('error', 'Product not found');
+        }
+
+        $data = $request->validate([
+            'photo_file' => 'required|image|mimes:jpeg,png,jpg,gif|max:4096',
+        ]);
+
+        $file = $request->file('photo_file');
+        $filename = uniqid('product_', true) . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('images/products'), $filename);
+        $photoPath = 'images/products/' . $filename;
+
+        $currentSort = DB::table('product_photos')
+            ->where('product_id', $productId)
+            ->max('sort_order');
+        if ($currentSort === null) {
+            $currentSort = 0;
+        }
+
+        DB::table('product_photos')->insert([
+            'product_id' => $productId,
+            'photo_url' => $photoPath,
+            'is_primary' => 0,
+            'sort_order' => $currentSort + 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/products/' . $productId . '/edit')->with('success', 'Photo added successfully');
     }
 
 

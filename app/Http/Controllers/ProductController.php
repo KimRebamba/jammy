@@ -58,4 +58,36 @@ class ProductController extends Controller
 
         return view('customer.catalog.products', compact('category', 'brand', 'products'));
     }
+
+    public function productShow($productId)
+    {
+        $product = DB::table('products as p')
+            ->leftJoin('brands as b', 'p.brand_id', '=', 'b.brand_id')
+            ->leftJoin('categories as c', 'p.category_id', '=', 'c.category_id')
+            ->leftJoin('product_photos as pp', function ($join) {
+                $join->on('p.product_id', '=', 'pp.product_id')
+                    ->where('pp.is_primary', true);
+            })
+            ->where('p.product_id', $productId)
+            ->where('p.is_active', 1)
+            ->select(
+                'p.*',
+                'b.brand_name',
+                'c.category_name',
+                'pp.photo_url as primary_photo'
+            )
+            ->first();
+
+        if (!$product) {
+            return redirect('/shop')->with('error', 'Product not found');
+        }
+
+        $photos = DB::table('product_photos')
+            ->where('product_id', $productId)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('customer.catalog.product_show', compact('product', 'photos'));
+    }
 }

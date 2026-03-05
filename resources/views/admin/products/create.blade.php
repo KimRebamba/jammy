@@ -49,6 +49,7 @@
     </p>
     <p>Stock Level: <input type="text" name="stock_level" value="{{ old('stock_level') }}"></p>
     <p>Primary Photo (800x800): <input type="file" name="photo_url"></p>
+    <p>Additional Photos (800x800): <input type="file" name="additional_photos[]" multiple></p>
     <p>Active: <input type="checkbox" name="is_active" value="1" {{ old('is_active') ? 'checked' : '' }}></p>
 
     <p><button type="submit">Save</button></p>

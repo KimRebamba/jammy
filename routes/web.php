@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\CustomerHomeController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
@@ -19,21 +19,37 @@ Route::middleware(['guest.custom'])->group(function () {
 });
 
 Route::middleware(['customer'])->group(function(){
-    Route::get('/customer/index', [CustomerHomeController::class, 'index']);
+    Route::get('/customer/index', [CustomerController::class, 'index']);
 
     Route::get('/customer/profile', [ProfileController::class, 'show']);
     Route::get('/customer/profile/edit', [ProfileController::class, 'edit']);
+    Route::post('/customer/profile/update', [ProfileController::class, 'update']);
 
     Route::get('/shop', [ProductController::class, 'categories']);
     Route::get('/shop/categories/{category}', [ProductController::class, 'brandsForCategory']);
     Route::get('/shop/categories/{category}/brands/{brand}', [ProductController::class, 'productsForBrandAndCategory']);
+    Route::get('/shop/products/{product}', [ProductController::class, 'productShow']);
 
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::get('/orders/{order}/return', [OrderController::class, 'returnForm']);
+    Route::post('/orders/{order}/return', [OrderController::class, 'returnStore']);
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+    Route::get('/orders/{order}/review', [OrderController::class, 'reviewForm']);
+    Route::post('/orders/{order}/review', [OrderController::class, 'reviewStore']);
 
     Route::get('/reviews', [ReviewController::class, 'index']);
+    Route::get('/reviews/{review}/edit', [ReviewController::class, 'edit']);
+    Route::post('/reviews/{review}/update', [ReviewController::class, 'update']);
+    Route::post('/reviews/{review}/delete', [ReviewController::class, 'delete']);
 
     Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/add/{product}', [CartController::class, 'add']);
+    Route::post('/cart/item/{id}/delete', [CartController::class, 'delete']);
+    Route::post('/cart/item/{id}/up', [CartController::class, 'increase']);
+    Route::post('/cart/item/{id}/down', [CartController::class, 'decrease']);
+    Route::post('/cart/buy', [CartController::class, 'buyForm']);
+    Route::post('/cart/buy/confirm', [CartController::class, 'buyConfirm']);
 });
 
 Route::middleware(['admin'])->group(function () {
@@ -54,6 +70,10 @@ Route::middleware(['admin'])->group(function () {
     Route::get('/admin/products/{id}/edit', [AdminController::class, 'productsEdit']);
     Route::post('/admin/products/{id}/update', [AdminController::class, 'productsUpdate']);
     Route::post('/admin/products/{id}/delete', [AdminController::class, 'productsDelete']);
+    Route::get('/admin/products/{product}/photos/{photo}/replace', [AdminController::class, 'productPhotoReplaceForm']);
+    Route::post('/admin/products/{product}/photos/{photo}/delete', [AdminController::class, 'productPhotoDelete']);
+    Route::post('/admin/products/{product}/photos/{photo}/replace', [AdminController::class, 'productPhotoReplace']);
+    Route::post('/admin/products/{product}/photos/add', [AdminController::class, 'productPhotoAdd']);
 
     Route::get('/admin/orders', [AdminController::class, 'orders']);
     Route::get('/admin/orders/{id}', [AdminController::class, 'ordersShow']);

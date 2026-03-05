@@ -19,7 +19,7 @@
         <th>Image</th>
         <th>Product</th>
         <th>Price</th>
-        <th>Action</th>
+        <th>Actions</th>
     </tr>
     @foreach($products as $product)
         <tr>
@@ -31,8 +31,13 @@
             <td>{{ $product->product_name }}</td>
             <td>{{ number_format($product->retail_price, 2) }}</td>
             <td>
-                <!-- Add-to-Cart will be implemented later -->
-                <a href="#">Add to Cart</a>
+                <a href="/shop/products/{{ $product->product_id }}">View</a>
+                |
+                <form action="/cart/add/{{ $product->product_id }}" method="post" style="display:inline;">
+                    @csrf
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit">Add to Cart</button>
+                </form>
             </td>
         </tr>
     @endforeach

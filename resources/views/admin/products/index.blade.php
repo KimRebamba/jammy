@@ -30,6 +30,7 @@
     <th>Product</th>
     <th>Brand</th>
     <th>Category</th>
+    <th>Model</th>
     <th>Price</th>
     <th>Stock</th>
     <th>Actions</th>
@@ -46,6 +47,7 @@
     <td>{{ $product->Product }}</td>
     <td>{{ $product->Brand }}</td>
     <td>{{ $product->Category }}</td>
+    <td>{{ $product->Model }}</td>
     <td>{{ $product->Price }}</td>
     <td>{{ $product->Stock }}</td>
     <td>

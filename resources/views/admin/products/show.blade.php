@@ -22,6 +22,26 @@
 <p>Stock Level: {{ $product->stock_level }}</p>
 <p>Active: {{ $product->is_active ? 'Yes' : 'No' }}</p>
 
+<h3>All Photos</h3>
+@if(count($photos) > 0)
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Image</th>
+            <th>Primary</th>
+            <th>Sort Order</th>
+        </tr>
+        @foreach($photos as $photo)
+            <tr>
+                <td><img src="{{ asset($photo->photo_url) }}" width="100"></td>
+                <td>{{ $photo->is_primary ? 'Yes' : 'No' }}</td>
+                <td>{{ $photo->sort_order }}</td>
+            </tr>
+        @endforeach
+    </table>
+@else
+    <p>No additional photos.</p>
+@endif
+
 <p><a href="/admin/products/{{ $product->product_id }}/edit">Edit</a></p>
 <p><a href="/admin/products">Back to Products</a></p>
 
