@@ -11,8 +11,20 @@ use App\DataTables\AccountsDataTable;
 use App\DataTables\ProductsDataTable;
 use App\DataTables\OrdersDataTable;
 use App\DataTables\ReviewsDataTable;
+use App\DataTables\BrandsDataTable;
+use App\DataTables\CategoriesDataTable;
+use App\DataTables\EmployeesDataTable;
+use App\DataTables\ExpensesDataTable;
+use App\DataTables\PositionsDataTable;
+use App\DataTables\ReturnsDataTable;
+use App\DataTables\SalariesDataTable;
 use App\Imports\ProductImport;
 use App\Charts\SalesCharts;
+use App\Charts\YearlySalesChart;
+use App\Charts\RangeSalesChart;
+use App\Charts\ProductSalesChart;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdminController extends Controller
 {
@@ -23,9 +35,9 @@ class AdminController extends Controller
 
     public function accounts()
     {
-        $accounts = AccountsDataTable::get();
+        $dataTable = app(AccountsDataTable::class);
 
-        return view('admin.accounts.index', compact('accounts'));
+        return $dataTable->render('admin.accounts.index');
     }
 
     public function accountsBatch(Request $request)
@@ -33,7 +45,7 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
-            'action' => 'required|in:delete,activate,deactivate',
+            'action' => 'required|in:delete,activate,deactivate,restore',
         ]);
 
         $currentUserId = session('user') ? session('user')->id : null;
@@ -45,9 +57,24 @@ class AdminController extends Controller
 
             DB::table('accounts')
                 ->whereIn('user_id', $data['selected_ids'])
-                ->delete();
+                ->update([
+                    'is_active' => 0,
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
             return redirect('/admin/accounts')->with('success', 'Selected accounts deleted');
+        }
+
+        if ($data['action'] === 'restore') {
+            DB::table('accounts')
+                ->whereIn('user_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/accounts')->with('success', 'Selected accounts restored');
         }
 
         $isActive = $data['action'] === 'activate' ? 1 : 0;
@@ -191,15 +218,22 @@ class AdminController extends Controller
             return redirect('/admin/accounts')->with('error', 'Cannot delete currently logged in account');
         }
 
-        DB::table('accounts')->where('user_id', $id)->delete();
+        DB::table('accounts')
+            ->where('user_id', $id)
+            ->update([
+                'is_active' => 0,
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
+
         return redirect('/admin/accounts')->with('success', 'Account deleted successfully');
     }
 
     public function products()
     {
-        $products = ProductsDataTable::get();
+        $dataTable = app(ProductsDataTable::class);
 
-        return view('admin.products.index', compact('products'));
+        return $dataTable->render('admin.products.index');
     }
 
     public function productsImport(Request $request)
@@ -214,11 +248,15 @@ class AdminController extends Controller
             return redirect('/admin/products')->with('error', 'Invalid upload');
         }
 
-        $importer = new ProductImport();
-        $importedCount = $importer->importFromCsv($file->getRealPath());
+        //excelimport
+        try {
+            Excel::import(new ProductImport(), $file);
+        } catch (\Throwable $e) {
+            Log::error('Product import failed', [
+                'message' => $e->getMessage(),
+            ]);
 
-        if ($importedCount === 0) {
-            return redirect('/admin/products')->with('error', 'No products imported from file');
+            return redirect('/admin/products')->with('error', 'Error importing products file');
         }
 
         return redirect('/admin/products')->with('success', 'Products imported successfully');
@@ -471,7 +509,12 @@ class AdminController extends Controller
             return redirect('/admin/products')->with('error', 'Cannot delete product that has been ordered');
         }
 
-        DB::table('products')->where('product_id', $id)->delete();
+        DB::table('products')
+            ->where('product_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/products')->with('success', 'Product deleted successfully');
     }
 
@@ -480,7 +523,19 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('products')
+                ->whereIn('product_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/products')->with('success', 'Selected products restored');
+        }
 
         $deleted = 0;
         $skipped = 0;
@@ -492,7 +547,12 @@ class AdminController extends Controller
                 continue;
             }
 
-            DB::table('products')->where('product_id', $productId)->delete();
+            DB::table('products')
+                ->where('product_id', $productId)
+                ->update([
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
             $deleted++;
         }
 
@@ -596,17 +656,9 @@ class AdminController extends Controller
 
     public function categories()
     {
-        $categories = DB::table('categories')
-            ->select(
-                'category_id as ID',
-                'category_name as Category',
-                'photo_url as Image',
-                'is_active as Active'
-            )
-            ->orderBy('category_id')
-            ->get();
+        $dataTable = app(CategoriesDataTable::class);
 
-        return view('admin.categories.index', compact('categories'));
+        return $dataTable->render('admin.categories.index');
     }
 
     public function categoriesCreate()
@@ -696,7 +748,12 @@ class AdminController extends Controller
 
     public function categoriesDelete($id)
     {
-        DB::table('categories')->where('category_id', $id)->delete();
+        DB::table('categories')
+            ->where('category_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/categories')->with('success', 'Category deleted successfully');
     }
 
@@ -705,20 +762,35 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('categories')
+                ->whereIn('category_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/categories')->with('success', 'Selected categories restored');
+        }
 
         DB::table('categories')
             ->whereIn('category_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/categories')->with('success', 'Selected categories deleted');
     }
 
     public function orders()
     {
-        $orders = OrdersDataTable::get();
+        $dataTable = app(OrdersDataTable::class);
 
-        return view('admin.orders.index', compact('orders'));
+        return $dataTable->render('admin.orders.index');
     }
 
     public function ordersShow($id)
@@ -788,15 +860,17 @@ class AdminController extends Controller
 
         if ($customer && $customer->email) {
             $msg = 'The status of your order has been updated. Please see the attached PDF receipt for details.';
-            Mail::to($customer->email)->send(
-                new OrderReceipt(
-                    $updatedOrder,
-                    $orderItems,
-                    $customer,
-                    'Order Status Updated',
-                    $msg
-                )
-            );
+
+            //sendMailUpdate
+            // Mail::to($customer->email)->send(
+            //     new OrderReceipt(
+            //         $updatedOrder,
+            //         $orderItems,
+            //         $customer,
+            //         'Order Status Updated',
+            //         $msg
+            //     )
+            // );
         }
 
         return redirect('/admin/orders')->with('success', 'Order updated successfully and email sent to customer');
@@ -804,7 +878,12 @@ class AdminController extends Controller
 
     public function ordersDelete($id)
     {
-        DB::table('orders')->where('order_id', $id)->delete();
+        DB::table('orders')
+            ->where('order_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/orders')->with('success', 'Order deleted successfully');
     }
 
@@ -813,31 +892,35 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('orders')
+                ->whereIn('order_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/orders')->with('success', 'Selected orders restored');
+        }
 
         DB::table('orders')
             ->whereIn('order_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/orders')->with('success', 'Selected orders deleted');
     }
 
     public function returns()
     {
-        $returns = DB::table('order_return as r')
-            ->leftJoin('orders as o', 'r.order_id', '=', 'o.order_id')
-            ->select(
-                'r.order_return_id as ID',
-                'o.order_id as OrderID',
-                'r.reason as Reason',
-                'r.cond as Condition',
-                'r.return_status as Status',
-                'r.refund_amount as Refund'
-            )
-            ->orderBy('r.order_return_id')
-            ->get();
+        $dataTable = app(ReturnsDataTable::class);
 
-        return view('admin.returns.index', compact('returns'));
+        return $dataTable->render('admin.returns.index');
     }
 
     public function returnsShow($id)
@@ -886,7 +969,12 @@ class AdminController extends Controller
 
     public function returnsDelete($id)
     {
-        DB::table('order_return')->where('order_return_id', $id)->delete();
+        DB::table('order_return')
+            ->where('order_return_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/returns')->with('success', 'Return deleted successfully');
     }
 
@@ -895,20 +983,35 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('order_return')
+                ->whereIn('order_return_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/returns')->with('success', 'Selected returns restored');
+        }
 
         DB::table('order_return')
             ->whereIn('order_return_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/returns')->with('success', 'Selected returns deleted');
     }
 
     public function reviews()
     {
-        $reviews = ReviewsDataTable::get();
+        $dataTable = app(ReviewsDataTable::class);
 
-        return view('admin.reviews.index', compact('reviews'));
+        return $dataTable->render('admin.reviews.index');
     }
 
     public function reviewsShow($id)
@@ -958,7 +1061,12 @@ class AdminController extends Controller
 
     public function reviewsDelete($id)
     {
-        DB::table('product_review')->where('review_id', $id)->delete();
+        DB::table('product_review')
+            ->where('review_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/reviews')->with('success', 'Review deleted successfully');
     }
 
@@ -967,11 +1075,26 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('product_review')
+                ->whereIn('review_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/reviews')->with('success', 'Selected reviews restored');
+        }
 
         DB::table('product_review')
             ->whereIn('review_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/reviews')->with('success', 'Selected reviews deleted');
     }
@@ -979,19 +1102,9 @@ class AdminController extends Controller
 
     public function employees()
     {
-        $employees = DB::table('employees as e')
-            ->leftJoin('positions as p', 'e.current_position_id', '=', 'p.position_id')
-            ->select(
-                'e.emp_id as ID',
-                DB::raw("CONCAT(e.first_name,' ',e.last_name) as Name"),
-                'p.position_name as Position',
-                'e.employment_status as Status',
-                'e.hire_date as Hired'
-            )
-            ->orderBy('e.emp_id')
-            ->get();
+        $dataTable = app(EmployeesDataTable::class);
 
-        return view('admin.employees.index', compact('employees'));
+        return $dataTable->render('admin.employees.index');
     }
 
     public function employeesCreate()
@@ -1097,7 +1210,12 @@ class AdminController extends Controller
 
     public function employeesDelete($id)
     {
-        DB::table('employees')->where('emp_id', $id)->delete();
+        DB::table('employees')
+            ->where('emp_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/employees')->with('success', 'Employee deleted successfully');
     }
 
@@ -1106,11 +1224,26 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('employees')
+                ->whereIn('emp_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/employees')->with('success', 'Selected employees restored');
+        }
 
         DB::table('employees')
             ->whereIn('emp_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/employees')->with('success', 'Selected employees deleted');
     }
@@ -1118,16 +1251,9 @@ class AdminController extends Controller
 
     public function positions()
     {
-        $positions = DB::table('positions')
-            ->select(
-                'position_id as ID',
-                'position_name as Position',
-                'monthly_rate as Salary'
-            )
-            ->orderBy('position_id')
-            ->get();
+        $dataTable = app(PositionsDataTable::class);
 
-        return view('admin.positions.index', compact('positions'));
+        return $dataTable->render('admin.positions.index');
     }
 
     public function positionsCreate()
@@ -1193,7 +1319,12 @@ class AdminController extends Controller
 
     public function positionsDelete($id)
     {
-        DB::table('positions')->where('position_id', $id)->delete();
+        DB::table('positions')
+            ->where('position_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/positions')->with('success', 'Position deleted successfully');
     }
 
@@ -1202,11 +1333,26 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('positions')
+                ->whereIn('position_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/positions')->with('success', 'Selected positions restored');
+        }
 
         DB::table('positions')
             ->whereIn('position_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/positions')->with('success', 'Selected positions deleted');
     }
@@ -1214,18 +1360,9 @@ class AdminController extends Controller
 
     public function expenses()
     {
-        $expenses = DB::table('expenses')
-            ->select(
-                'exp_id as ID',
-                'expense_type as Type',
-                'amount as Amount',
-                'status as Status',
-                'due_date as Due'
-            )
-            ->orderBy('exp_id')
-            ->get();
+        $dataTable = app(ExpensesDataTable::class);
 
-        return view('admin.expenses.index', compact('expenses'));
+        return $dataTable->render('admin.expenses.index');
     }
 
     public function expensesCreate()
@@ -1307,7 +1444,12 @@ class AdminController extends Controller
 
     public function expensesDelete($id)
     {
-        DB::table('expenses')->where('exp_id', $id)->delete();
+        DB::table('expenses')
+            ->where('exp_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/expenses')->with('success', 'Expense deleted successfully');
     }
 
@@ -1316,30 +1458,35 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('expenses')
+                ->whereIn('exp_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/expenses')->with('success', 'Selected expenses restored');
+        }
 
         DB::table('expenses')
             ->whereIn('exp_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/expenses')->with('success', 'Selected expenses deleted');
     }
 
     public function salaries()
     {
-        $salaries = DB::table('salaries as s')
-            ->leftJoin('employees as e', 's.emp_id', '=', 'e.emp_id')
-            ->select(
-                's.salary_id as ID',
-                DB::raw("CONCAT(e.first_name,' ',e.last_name) as Employee"),
-                's.pay_date as PayDate',
-                's.rate_used as Rate',
-                's.status as Status'
-            )
-            ->orderBy('s.pay_date', 'desc')
-            ->get();
+        $dataTable = app(SalariesDataTable::class);
 
-        return view('admin.salaries.index', compact('salaries'));
+        return $dataTable->render('admin.salaries.index');
     }
 
     public function salariesCreate()
@@ -1439,7 +1586,12 @@ class AdminController extends Controller
 
     public function salariesDelete($id)
     {
-        DB::table('salaries')->where('salary_id', $id)->delete();
+        DB::table('salaries')
+            ->where('salary_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/salaries')->with('success', 'Salary deleted successfully');
     }
 
@@ -1448,29 +1600,35 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('salaries')
+                ->whereIn('salary_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/salaries')->with('success', 'Selected salaries restored');
+        }
 
         DB::table('salaries')
             ->whereIn('salary_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/salaries')->with('success', 'Selected salaries deleted');
     }
 
     public function brands()
     {
-        $brands = DB::table('brands')
-            ->select(
-                'brand_id as ID',
-                'brand_name as Brand',
-                'logo_url as Logo',
-                'website as Website',
-                'is_active as Active'
-            )
-            ->orderBy('brand_id')
-            ->get();
+        $dataTable = app(BrandsDataTable::class);
 
-        return view('admin.brands.index', compact('brands'));
+        return $dataTable->render('admin.brands.index');
     }
 
     public function brandsCreate()
@@ -1564,7 +1722,12 @@ class AdminController extends Controller
 
     public function brandsDelete($id)
     {
-        DB::table('brands')->where('brand_id', $id)->delete();
+        DB::table('brands')
+            ->where('brand_id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
         return redirect('/admin/brands')->with('success', 'Brand deleted successfully');
     }
 
@@ -1573,11 +1736,26 @@ class AdminController extends Controller
         $data = $request->validate([
             'selected_ids' => 'required|array',
             'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,restore',
         ]);
+
+        if ($data['action'] === 'restore') {
+            DB::table('brands')
+                ->whereIn('brand_id', $data['selected_ids'])
+                ->update([
+                    'deleted_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            return redirect('/admin/brands')->with('success', 'Selected brands restored');
+        }
 
         DB::table('brands')
             ->whereIn('brand_id', $data['selected_ids'])
-            ->delete();
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return redirect('/admin/brands')->with('success', 'Selected brands deleted');
     }
@@ -1602,8 +1780,10 @@ class AdminController extends Controller
         $totalEmployees = DB::table('employees')->count();
 
         $yearly = SalesCharts::yearlySales();
-        $yearlySalesLabels = $yearly['labels'];
-        $yearlySalesData = $yearly['data'];
+        $yearlyChart = new YearlySalesChart();
+        $yearlyChart->labels($yearly['labels']);
+        $yearlyChart->dataset('Yearly Sales', 'bar', $yearly['data']);
+        $yearlyChart->height(260);
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
@@ -1614,12 +1794,16 @@ class AdminController extends Controller
         }
 
         $range = SalesCharts::rangeSales($startDate, $endDate);
-        $rangeLabels = $range['labels'];
-        $rangeData = $range['data'];
+        $rangeChart = new RangeSalesChart();
+        $rangeChart->labels($range['labels']);
+        $rangeChart->dataset('Sales', 'bar', $range['data']);
+        $rangeChart->height(260);
 
         $product = SalesCharts::productSales();
-        $productLabels = $product['labels'];
-        $productData = $product['data'];
+        $productChart = new ProductSalesChart();
+        $productChart->labels($product['labels']);
+        $productChart->dataset('Sales by Product', 'pie', $product['data']);
+        $productChart->height(260);
 
         return view('admin.reports', compact(
             'totalSales',
@@ -1628,14 +1812,11 @@ class AdminController extends Controller
             'totalProducts',
             'totalCustomers',
             'totalEmployees',
-            'yearlySalesLabels',
-            'yearlySalesData',
-            'rangeLabels',
-            'rangeData',
             'startDate',
             'endDate',
-            'productLabels',
-            'productData'
+            'yearlyChart',
+            'rangeChart',
+            'productChart'
         ));
     }
 

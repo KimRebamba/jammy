@@ -16,7 +16,7 @@ class CustomerMiddleware
     public function handle($request, Closure $next)
 {
     if (!session()->has('user') || session('user')->role !== 'customer') {
-        return redirect('/login');
+        return redirect('/login')->with('error', 'Log in as a customer to access this page');
     }
 
     return $next($request);

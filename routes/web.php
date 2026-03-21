@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [AuthController::class, 'home']);
 Route::get('/home', [AuthController::class, 'home']);
+Route::get('/shop/browse', [AuthController::class, 'home']);
 
 Route::middleware(['guest.custom'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin']);

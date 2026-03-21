@@ -108,6 +108,23 @@ class ProductController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('customer.catalog.product_show', compact('product', 'photos'));
+        $reviews = DB::table('product_review as r')
+            ->join('product_order as po', 'r.product_order_id', '=', 'po.product_order_id')
+            ->join('orders as o', 'po.order_id', '=', 'o.order_id')
+            ->leftJoin('accounts as a', 'r.user_id', '=', 'a.user_id')
+            ->where('po.product_id', $productId)
+            ->where('r.is_verified', true)
+            ->where('r.deleted_at', null)
+            ->orderByDesc('r.created_at')
+            ->select(
+                'r.rating',
+                'r.review_title',
+                'r.review_text',
+                'r.created_at',
+                'a.username'            
+            )
+            ->get();
+
+        return view('customer.catalog.product_show', compact('product', 'photos', 'reviews'));
     }
 }

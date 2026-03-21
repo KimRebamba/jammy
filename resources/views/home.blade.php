@@ -1,73 +1,38 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ config('app.name', 'Jammy - Home') }}</title>
-</head>
-<body>
-<h2>Home Page</h2>
+@extends('layouts.customer')
 
-<p>Welcome, 
-    @if(!session('user'))
-        guest!
-    @else
-          {{ session('user')->username }}
-    @endif
-</p>
-    
-    <br>
+@section('title', 'Jammy Music')
 
-    @if(session('user'))
-        <a href="/logout">Logout</a>
-    @else
-        <a href="/login">Login</a>
-    @endif
+@section('content')
+    <div class="rounded-2xl border border-stone-200 bg-white/90 shadow-lg shadow-stone-200/50 p-6 sm:p-8 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-stone-900">Welcome to Jammy Music</h1>
+                <p class="text-stone-600 mt-1">
+                    @if(session('user'))
+                        Hello, <span class="font-semibold text-stone-800">{{ session('user')->username }}</span> — browse below or head to your <a href="/customer/index" class="text-amber-600 hover:underline">dashboard</a>.
+                    @else
+                        Browse our catalog below. <span class="text-stone-500">Log in</span> to add items to your cart and checkout.
+                    @endif
+                </p>
+            </div>
+            @if(!session('user'))
+                <div class="flex flex-wrap gap-2">
+                    <a href="/login" class="inline-flex items-center gap-2 py-2.5 px-4 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 shadow-md shadow-amber-500/20 text-sm">
+                        <i class="fa-solid fa-right-to-bracket"></i> Log in
+                    </a>
+                    <a href="/register" class="inline-flex items-center gap-2 py-2.5 px-4 border border-stone-300 text-stone-800 font-medium rounded-xl hover:bg-stone-50 text-sm">
+                        <i class="fa-solid fa-user-plus"></i> Sign up
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
 
-<hr>
-
-<h3>Search Products</h3>
-<form method="GET" action="/home">
-    <p>
-        <input type="text" name="q" value="{{ $searchTerm ?? '' }}" placeholder="Search products...">
-        <button type="submit">Search</button>
-    </p>
-</form>
-
-@if(isset($searchTerm) && $searchTerm !== '')
-    <h4>Search results for "{{ $searchTerm }}"</h4>
-
-    @if($products && $products->count() > 0)
-        <table border="1" cellpadding="5" cellspacing="0">
-            <tr>
-                <th>Image</th>
-                <th>Product</th>
-                <th>Price</th>
-                <th>Actions</th>
-            </tr>
-            @foreach($products as $product)
-                <tr>
-                    <td>
-                        @if($product->photo_url)
-                            <img src="{{ asset($product->photo_url) }}" alt="{{ $product->product_name }}" width="80">
-                        @endif
-                    </td>
-                    <td>{{ $product->product_name }}</td>
-                    <td>{{ number_format($product->retail_price, 2) }}</td>
-                    <td>
-                        <a href="/shop/products/{{ $product->product_id }}">View</a>
-                    </td>
-                </tr>
-            @endforeach
-        </table>
-
-        @if($products instanceof \Illuminate\Pagination\LengthAwarePaginator)
-            <p>
-                {{ $products->withQueryString()->links() }}
-            </p>
-        @endif
-    @else
-        <p>No products found.</p>
-    @endif
-@endif
-
-</body>
-</html>
+    @include('partials.storefront_catalog', [
+        'catalogHeading' => 'Shop',
+        'catalogSubheading' => 'Search and filter products the same way as in the store — no account needed to browse.',
+        'catalogFormAction' => url('/home'),
+        'catalogClearUrl' => url('/home'),
+        'showCustomerBackLink' => false,
+    ])
+@endsection

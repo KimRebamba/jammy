@@ -1,54 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Salary</title>
-</head>
-<body>
+@extends('layouts.admin')
 
-<h2>Add Salary</h2>
+@section('title', 'Add Salary')
 
-@if(session('success'))
-    <p style="color: green;">{{ session('success') }}</p>
-@endif
-@if(session('error'))
-    <p style="color: red;">{{ session('error') }}</p>
-@endif
+@section('content')
+<div class="max-w-3xl mx-auto">
+    <div class="bg-slate-900/70 border border-slate-700/60 rounded-2xl shadow-xl p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-xl font-semibold text-slate-50">Add Salary</h1>
+            <a href="/admin/salaries" class="text-sm text-amber-400 hover:text-amber-300 transition-colors">
+                
+                Back to Salaries
+            </a>
+        </div>
 
-@if($errors->any())
-    <ul style="color:red;">
-        @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-@endif
+        @if($errors->any())
+            <ul class="mb-4 text-sm text-red-300 list-disc list-inside space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        @endif
 
-<form action="/admin/salaries" method="post">
-    @csrf
-    <p>Employee:
-        <select name="emp_id">
-            @foreach($employees as $employee)
-                <option value="{{ $employee->emp_id }}" {{ old('emp_id') == $employee->emp_id ? 'selected' : '' }}>
-                    {{ $employee->last_name }}, {{ $employee->first_name }}
-                </option>
-            @endforeach
-        </select>
-    </p>
-    <p>Pay Date: <input type="text" name="pay_date" value="{{ old('pay_date') }}"></p>
-    <p>Rate Used: <input type="text" name="rate_used" value="{{ old('rate_used') }}"></p>
-    <p>Status:
-        <select name="status">
-            <option value="pending" {{ old('status', 'pending') == 'pending' ? 'selected' : '' }}>Pending</option>
-            <option value="paid" {{ old('status') == 'paid' ? 'selected' : '' }}>Paid</option>
-            <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-        </select>
-    </p>
-    <p>From Date: <input type="text" name="from_date" value="{{ old('from_date') }}"></p>
-    <p>To Date: <input type="text" name="to_date" value="{{ old('to_date') }}"></p>
+        <form action="/admin/salaries" method="post" class="space-y-3">
+            @csrf
+            <p>Employee:
+                <select name="emp_id" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+                    @foreach($employees as $employee)
+                        <option value="{{ $employee->emp_id }}" {{ old('emp_id') == $employee->emp_id ? 'selected' : '' }}>
+                            {{ $employee->last_name }}, {{ $employee->first_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </p>
+            <p>Pay Date: <input type="text" name="pay_date" value="{{ old('pay_date') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm"></p>
+            <p>Rate Used: <input type="text" name="rate_used" value="{{ old('rate_used') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm"></p>
+            <p>Status:
+                <select name="status" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+                    <option value="pending" {{ old('status', 'pending') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="paid" {{ old('status') == 'paid' ? 'selected' : '' }}>Paid</option>
+                    <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                </select>
+            </p>
+            <p>From Date: <input type="text" name="from_date" value="{{ old('from_date') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm"></p>
+            <p>To Date: <input type="text" name="to_date" value="{{ old('to_date') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm"></p>
 
-    <p><button type="submit">Save</button></p>
-</form>
-
-<p><a href="/admin/salaries">Back to Salaries</a></p>
-
-</body>
-</html>
+            <p>
+                <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-amber-500 text-slate-900 text-sm font-semibold hover:bg-amber-400 transition-colors">
+                    Save Salary
+                </button>
+            </p>
+        </form>
+    </div>
+</div>
+@endsection

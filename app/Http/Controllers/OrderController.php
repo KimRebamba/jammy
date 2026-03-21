@@ -186,12 +186,16 @@ class OrderController extends Controller
             'cond' => 'required|in:new,opened,damaged,other',
         ]);
 
+$price = DB::table('product_order')
+            ->where('order_id', $id)
+            ->sum(DB::raw('quantity * unit_price'));
+
         DB::table('order_return')->insert([
             'order_id' => $id,
             'reason' => $data['reason'] ?? null,
             'cond' => $data['cond'],
             'return_status' => 'requested',
-            'refund_amount' => 0,
+            'refund_amount' => $price,
             'processed_at' => null,
             'created_at' => now(),
             'updated_at' => now(),

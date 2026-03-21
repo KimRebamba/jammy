@@ -1,49 +1,68 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Account</title>
-</head>
-<body>
+@extends('layouts.admin')
 
-<h2>Add Account</h2>
+@section('title', 'Add Account')
 
-@if(session('success'))
-    <p style="color: green;">{{ session('success') }}</p>
-@endif
-@if(session('error'))
-    <p style="color: red;">{{ session('error') }}</p>
-@endif
+@section('content')
+<div class="max-w-3xl mx-auto">
+    <div class="bg-slate-900/70 border border-slate-700/60 rounded-2xl shadow-xl p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-xl font-semibold text-slate-50">Add Account</h1>
+            <a href="/admin/accounts" class="text-sm text-amber-400 hover:text-amber-300 transition-colors">
+                Back to Accounts
+            </a>
+        </div>
 
-@if($errors->any())
-    <ul style="color:red;">
-        @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-@endif
+        @if($errors->any())
+            <ul class="mb-4 text-sm text-red-300 list-disc list-inside space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        @endif
 
-<form action="/admin/accounts" method="post" enctype="multipart/form-data">
-    @csrf
-    <p>Username: <input type="text" name="username" value="{{ old('username') }}"></p>
-    <p>Password: <input type="text" name="password"></p>
-    <p>Email: <input type="text" name="email" value="{{ old('email') }}"></p>
-    <p>First Name: <input type="text" name="first_name" value="{{ old('first_name') }}"></p>
-    <p>Last Name: <input type="text" name="last_name" value="{{ old('last_name') }}"></p>
-    <p>Address: <input type="text" name="address" value="{{ old('address') }}"></p>
-    <p>Phone Number: <input type="text" name="phone_number" value="{{ old('phone_number') }}"></p>
-    <p>Role:
-        <select name="role">
-            <option value="customer" {{ old('role') == 'customer' ? 'selected' : '' }}>Customer</option>
-            <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
-        </select>
-    </p>
-    <p>Profile Photo (800x800): <input type="file" name="profile_photo_url"></p>
-    <p>Active: <input type="checkbox" name="is_active" value="1" {{ old('is_active') ? 'checked' : '' }}></p>
+        <form action="/admin/accounts" method="post" enctype="multipart/form-data" class="space-y-3">
+            @csrf
+            <p>Username:
+                <input type="text" name="username" value="{{ old('username') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+            </p>
+            <p>Password:
+                <input type="password" name="password" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+            </p>
+            <p>Email:
+                <input type="email" name="email" value="{{ old('email') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+            </p>
+            <p>First Name:
+                <input type="text" name="first_name" value="{{ old('first_name') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+            </p>
+            <p>Last Name:
+                <input type="text" name="last_name" value="{{ old('last_name') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+            </p>
+            <p>Address:
+                <input type="text" name="address" value="{{ old('address') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+            </p>
+            <p>Phone Number:
+                <input type="text" name="phone_number" value="{{ old('phone_number') }}" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+            </p>
+            <p>Role:
+                <select name="role" class="mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 w-full text-sm">
+                    <option value="customer" {{ old('role') == 'customer' ? 'selected' : '' }}>Customer</option>
+                    <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                </select>
+            </p>
+            <p>Profile Photo (800x800):
+                <input type="file" name="profile_photo_url" class="mt-1 block w-full text-sm text-slate-200">
+            </p>
+            <p class="flex items-center gap-2">
+                <input type="checkbox" name="is_active" value="1" {{ old('is_active') ? 'checked' : '' }} class="rounded border-slate-600 bg-slate-900">
+                <span>Active</span>
+            </p>
 
-    <p><button type="submit">Save</button></p>
-</form>
-
-<p><a href="/admin/accounts">Back to Accounts</a></p>
-
-</body>
-</html>
+            <p>
+                <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-amber-500 text-slate-900 text-sm font-semibold hover:bg-amber-400 transition-colors">
+                    Save Account
+                </button>
+            </p>
+        </form>
+    </div>
+</div>
+@endsection

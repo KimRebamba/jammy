@@ -16,11 +16,11 @@ class AdminMiddleware
     public function handle($request, Closure $next)
 {
     if (!session()->has('user')) {
-        return redirect('/login');
+        return redirect('/login')->with('error', 'You do not have access to the admin panel');
     }
 
     if (session('user')->role !== 'admin') {
-        return redirect('/login');
+        return redirect('/login')->with('error', 'You do not have access to the admin panel');
     }
 
     return $next($request);

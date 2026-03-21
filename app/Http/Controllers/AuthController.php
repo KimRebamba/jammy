@@ -16,27 +16,98 @@ class AuthController extends Controller
     public function home(Request $request)
     {
         $searchTerm = trim((string) $request->query('q', ''));
-
-        $products = null;
+        $minPrice = $request->query('min_price');
+        $maxPrice = $request->query('max_price');
+        $categoryId = $request->query('category_id');
+        $brandId = $request->query('brand_id');
+        $type = $request->query('type');
 
         if ($searchTerm !== '') {
-            $products = Product::search($searchTerm)
-                ->where('is_active', 1)
-                ->paginate(10);
+            $builder = Product::search($searchTerm);
+        } else {
+            $builder = Product::query();
+        }
+
+        $builder->where('is_active', 1);
+
+        if ($minPrice !== null && $minPrice !== '' && is_numeric($minPrice)) {
+            $builder->where('retail_price', '>=', (float) $minPrice);
+        }
+
+        if ($maxPrice !== null && $maxPrice !== '' && is_numeric($maxPrice)) {
+            $builder->where('retail_price', '<=', (float) $maxPrice);
+        }
+
+        if ($categoryId !== null && $categoryId !== '' && ctype_digit((string) $categoryId)) {
+            $builder->where('category_id', (int) $categoryId);
+        }
+
+        if ($brandId !== null && $brandId !== '' && ctype_digit((string) $brandId)) {
+            $builder->where('brand_id', (int) $brandId);
+        }
+
+        if ($type !== null && $type !== '') {
+            $builder->where('model', 'like', '%' . $type . '%');
+        }
+
+        $products = $builder
+            ->orderBy('product_name')
+            ->paginate(12)
+            ->appends($request->query());
+
+        $productIds = collect($products->items())
+            ->pluck('product_id')
+            ->filter()
+            ->values();
+
+        if ($productIds->isNotEmpty()) {
+            $photoRows = DB::table('product_photos')
+                ->whereIn('product_id', $productIds)
+                ->where('is_primary', 1)
+                ->get()
+                ->keyBy('product_id');
+
+            $metaRows = DB::table('products as p')
+                ->leftJoin('brands as b', 'p.brand_id', '=', 'b.brand_id')
+                ->leftJoin('categories as c', 'p.category_id', '=', 'c.category_id')
+                ->whereIn('p.product_id', $productIds)
+                ->select('p.product_id', 'b.brand_name', 'c.category_name')
+                ->get()
+                ->keyBy('product_id');
 
             foreach ($products as $product) {
-                $photo = DB::table('product_photos')
-                    ->where('product_id', $product->product_id)
-                    ->where('is_primary', 1)
-                    ->first();
-
+                $photo = $photoRows->get($product->product_id);
                 $product->photo_url = $photo ? $photo->photo_url : null;
+
+                $meta = $metaRows->get($product->product_id);
+                if ($meta) {
+                    $product->brand_name = $meta->brand_name;
+                    $product->category_name = $meta->category_name;
+                }
             }
         }
+
+        $categories = DB::table('categories')
+            ->orderBy('category_name')
+            ->get();
+
+        $brands = DB::table('brands')
+            ->orderBy('brand_name')
+            ->get();
+
+        $typeOptions = DB::table('products')
+            ->whereNotNull('model')
+            ->distinct()
+            ->orderBy('model')
+            ->pluck('model')
+            ->toArray();
 
         return view('home', [
             'searchTerm' => $searchTerm,
             'products' => $products,
+            'categories' => $categories,
+            'brands' => $brands,
+            'typeOptions' => $typeOptions,
         ]);
     }
     public function showLogin()
@@ -63,7 +134,8 @@ class AuthController extends Controller
                 'password',
                 'role',
                 'is_active',
-                'email_verified_at'
+                'email_verified_at',
+                'deleted_at'
             )
             ->where('username', $request->username)
             ->first();
@@ -76,7 +148,7 @@ class AuthController extends Controller
             return back()->with('error', 'Invalid Credentials');
         }
 
-        if (!$user->is_active) {
+        if (!$user->is_active || !is_null($user->deleted_at)) {
             return back()->with('error', 'Account inactive');
         }
 

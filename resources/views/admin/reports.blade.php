@@ -1,150 +1,80 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Reports</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
+@extends('layouts.admin')
 
-<h2>Business Reports Summary</h2>
+@section('title', 'Reports')
 
-<table border="1" cellpadding="10">
+@section('content')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<tr>
-    <td>Total Sales Revenue</td>
-    <td>{{ $totalSales->total ?? 0 }}</td>
-</tr>
+<div class="mb-6">
+    <h2 class="text-2xl font-semibold text-slate-50 mb-1">Business Reports Summary</h2>
+    <p class="text-sm text-slate-400">High-level overview of sales, expenses and store activity.</p>
+</div>
 
-<tr>
-    <td>Total Paid Expenses</td>
-    <td>{{ $totalExpenses }}</td>
-</tr>
+<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <p class="text-xs text-slate-400 mb-1">Total Sales Revenue</p>
+        <p class="text-xl font-semibold text-amber-300">{{ $totalSales->total ?? 0 }}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <p class="text-xs text-slate-400 mb-1">Total Paid Expenses</p>
+        <p class="text-xl font-semibold text-rose-300">{{ $totalExpenses }}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <p class="text-xs text-slate-400 mb-1">Estimated Profit</p>
+        <p class="text-xl font-semibold text-emerald-300">{{ ($totalSales->total ?? 0) - $totalExpenses }}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <p class="text-xs text-slate-400 mb-1">Total Orders</p>
+        <p class="text-xl font-semibold text-slate-50">{{ $totalOrders }}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <p class="text-xs text-slate-400 mb-1">Total Products</p>
+        <p class="text-xl font-semibold text-slate-50">{{ $totalProducts }}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <p class="text-xs text-slate-400 mb-1">Customers / Employees</p>
+        <p class="text-xl font-semibold text-slate-50">{{ $totalCustomers }} / {{ $totalEmployees }}</p>
+    </div>
+</div>
 
-<tr>
-    <td>Total Orders</td>
-    <td>{{ $totalOrders }}</td>
-</tr>
+<div class="grid gap-8 lg:grid-cols-2 mb-8">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <h3 class="text-sm font-semibold text-slate-100 mb-3">Yearly Sales</h3>
+        <div class="relative max-h-64 overflow-hidden">
+            {!! $yearlyChart->container() !!}
+        </div>
+    </div>
 
-<tr>
-    <td>Total Products</td>
-    <td>{{ $totalProducts }}</td>
-</tr>
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <div class="flex items-center justify-between mb-3 gap-3">
+            <h3 class="text-sm font-semibold text-slate-100">Sales by Date Range</h3>
+            <form method="GET" action="/admin/reports" class="flex flex-wrap items-center gap-2 text-xs">
+                <label class="flex items-center gap-1 text-slate-300">
+                    <span>Start</span>
+                    <input type="date" name="start_date" value="{{ $startDate }}" class="rounded border border-slate-600 bg-slate-900 text-slate-100 px-2 py-1 text-xs">
+                </label>
+                <label class="flex items-center gap-1 text-slate-300">
+                    <span>End</span>
+                    <input type="date" name="end_date" value="{{ $endDate }}" class="rounded border border-slate-600 bg-slate-900 text-slate-100 px-2 py-1 text-xs">
+                </label>
+                <button type="submit" class="px-3 py-1.5 rounded bg-amber-500 text-slate-950 font-semibold hover:bg-amber-400">Apply</button>
+            </form>
+        </div>
+        <div class="relative max-h-64 overflow-hidden">
+            {!! $rangeChart->container() !!}
+        </div>
+    </div>
+</div>
 
-<tr>
-    <td>Total Customers</td>
-    <td>{{ $totalCustomers }}</td>
-</tr>
+<div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 mb-4">
+    <h3 class="text-sm font-semibold text-slate-100 mb-3">Sales by Product (Percentage)</h3>
+    <div class="relative max-h-64 overflow-hidden">
+        {!! $productChart->container() !!}
+    </div>
+</div>
 
-<tr>
-    <td>Total Employees</td>
-    <td>{{ $totalEmployees }}</td>
-</tr>
-
-<tr>
-    <td>Estimated Profit</td>
-    <td>{{ ($totalSales->total ?? 0) - $totalExpenses }}</td>
-</tr>
-
-</table>
-
-<h2>Yearly Sales</h2>
-<canvas id="yearlySalesChart" width="400" height="200"></canvas>
-
-<h2>Sales by Date Range</h2>
-<form method="GET" action="/admin/reports">
-    <p>
-        Start Date: <input type="date" name="start_date" value="{{ $startDate }}">
-        End Date: <input type="date" name="end_date" value="{{ $endDate }}">
-        <button type="submit">Apply</button>
-    </p>
-</form>
-<canvas id="rangeSalesChart" width="400" height="200"></canvas>
-
-<h2>Sales by Product (Percentage)</h2>
-<canvas id="productPieChart" width="400" height="200"></canvas>
-
-<br>
-<a href="/admin/dashboard">Back</a>
-
-<script>
-    (function () {
-        var yearlyLabels = {!! json_encode($yearlySalesLabels) !!};
-        var yearlyData = {!! json_encode($yearlySalesData) !!};
-
-        if (yearlyLabels.length > 0 && document.getElementById('yearlySalesChart')) {
-            var ctx1 = document.getElementById('yearlySalesChart').getContext('2d');
-            new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: yearlyLabels,
-                    datasets: [{
-                        label: 'Yearly Sales',
-                        data: yearlyData,
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        var rangeLabels = {!! json_encode($rangeLabels) !!};
-        var rangeData = {!! json_encode($rangeData) !!};
-
-        if (rangeLabels.length > 0 && document.getElementById('rangeSalesChart')) {
-            var ctx2 = document.getElementById('rangeSalesChart').getContext('2d');
-            new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: rangeLabels,
-                    datasets: [{
-                        label: 'Sales',
-                        data: rangeData,
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        var productLabels = {!! json_encode($productLabels) !!};
-        var productData = {!! json_encode($productData) !!};
-
-        if (productLabels.length > 0 && document.getElementById('productPieChart')) {
-            var ctx3 = document.getElementById('productPieChart').getContext('2d');
-            var baseColors = [
-                '#3366CC', '#DC3912', '#FF9900', '#109618', '#990099',
-                '#3B3EAC', '#0099C6', '#DD4477', '#66AA00', '#B82E2E',
-                '#316395', '#994499', '#22AA99', '#AAAA11', '#6633CC'
-            ];
-            var bgColors = productLabels.map(function (_, index) {
-                return baseColors[index % baseColors.length];
-            });
-
-            new Chart(ctx3, {
-                type: 'pie',
-                data: {
-                    labels: productLabels,
-                    datasets: [{
-                        data: productData,
-                        backgroundColor: bgColors
-                    }]
-                }
-            });
-        }
-    })();
-</script>
-
-</body>
-</html>
+<p class="text-xs text-slate-400"><a href="/admin/dashboard" class="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to dashboard</a></p>
+{!! $yearlyChart->script() !!}
+{!! $rangeChart->script() !!}
+{!! $productChart->script() !!}
+@endsection

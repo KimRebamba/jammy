@@ -1,98 +1,60 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Reviews</title>
+@extends('layouts.admin')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDrpNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-bs5/2.2.1/dataTables.bootstrap5.min.css"
-        integrity="sha512-pVSTZJo4Kj/eLMUG1w+itkGx+scwF00G5dMb02FjgU9WwF7F/cpZvu1Bf1ojA3iAf8y94cltGnuPV9vwv3CgZw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+@section('title', 'Reviews')
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
-        integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"
-        integrity="sha512-BkpSL20WETFylMrcirBahHfSnY++H2O1W+UnEEO4yNIl+jI2+zowyoGJpbtk6bx97fBXf++WJHSSK2MV4ghPcg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdn.datatables.net/1.11.4/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+@section('content')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+    integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"
+    integrity="sha512-BkpSL20WETFylMrcirBahHfSnY++H2O1W+UnEEO4yNIl+jI2+zowyoGJpbtk6bx97fBXf++WJHSSK2MV4ghPcg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    <script>
-        $(document).ready(function () {
-            $('#reviewsTable').DataTable();
-        });
-    </script>
-</head>
-<body class="container mt-4">
+<div class="bg-slate-950/40 rounded-2xl border border-slate-800 p-4">
 
-<h2>Reviews</h2>
+    <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xl font-semibold text-slate-50">Reviews</h2>
+    </div>
 
-@if(session('success'))
-    <p style="color: green;">{{ session('success') }}</p>
-@endif
-@if(session('error'))
-    <p style="color: red;">{{ session('error') }}</p>
-@endif
+    <form method="GET" class="mb-3 flex items-center justify-end gap-2 text-xs text-slate-300">
+        <label for="deleted-filter-reviews">Show:</label>
+        <select id="deleted-filter-reviews" name="deleted" class="rounded-md border border-slate-700 bg-slate-900/80 text-xs px-2 py-1" onchange="this.form.submit()">
+            <option value="" {{ request('deleted') === null || request('deleted') === '' ? 'selected' : '' }}>Active only</option>
+            <option value="with" {{ request('deleted') === 'with' ? 'selected' : '' }}>Active + deleted</option>
+            <option value="only" {{ request('deleted') === 'only' ? 'selected' : '' }}>Deleted only</option>
+        </select>
+    </form>
 
-@if($errors->any())
-    <ul style="color:red;">
-        @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-@endif
+    @if($errors->any())
+        <ul class="mb-3 text-sm text-red-300 list-disc list-inside space-y-1">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    @endif
 
-<form method="post" action="/admin/reviews/batch">
-@csrf
+    <form method="post" action="/admin/reviews/batch">
+        @csrf
 
-<table id="reviewsTable" class="table table-striped table-bordered">
-<tr>
-    <th>Select</th>
-    <th>ID</th>
-    <th>Customer</th>
-    <th>Product</th>
-    <th>Rating</th>
-    <th>Verified</th>
-    <th>Actions</th>
-</tr>
+        <div class="rounded-xl border border-slate-800/80 bg-slate-950/60">
+            {!! $dataTable->table(['class' => 'min-w-full text-sm text-left', 'id' => 'reviews-table']) !!}
+        </div>
 
-@foreach($reviews as $review)
-<tr>
-    <td>
-        <input type="checkbox" name="selected_ids[]" value="{{ $review->ID }}">
-    </td>
-    <td>{{ $review->ID }}</td>
-    <td>{{ $review->Customer }}</td>
-    <td>{{ $review->Product }}</td>
-    <td>{{ $review->Rating }}</td>
-    <td>{{ $review->Verified ? 'Yes' : 'No' }}</td>
-    <td>
-        <a href="/admin/reviews/{{ $review->ID }}">View</a> |
-        <a href="/admin/reviews/{{ $review->ID }}/edit">Edit</a> |
-        <form action="/admin/reviews/{{ $review->ID }}/delete" method="post" style="display:inline;">
-            @csrf
-            <button type="submit">Delete</button>
-        </form>
-    </td>
-</tr>
-@endforeach
+        <div class="mt-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <button type="submit" name="action" value="delete" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-red-500/80 hover:bg-red-400 text-slate-950 text-xs font-semibold">
+                    Delete Selected
+                </button>
+                <button type="submit" name="action" value="restore" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-500/80 hover:bg-emerald-400 text-slate-950 text-xs font-semibold">
+                    Restore Selected
+                </button>
+            </div>
+            <a href="/admin/dashboard" class="text-amber-300 hover:text-amber-200 text-xs">Back to dashboard</a>
+        </div>
 
-</table>
+    </form>
 
-<div class="mt-2">
-    <button type="submit" class="btn btn-danger">Delete Selected</button>
 </div>
 
-</form>
-
-<br>
-<a href="/admin/dashboard" class="btn btn-secondary">Back</a>
-
-</body>
-</html>
+{!! $dataTable->scripts() !!}
+@endsection
