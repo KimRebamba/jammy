@@ -2,7 +2,13 @@
 	<img src="public/guitar-solid-full.svg" alt="Jammy logo" width="80"/>
 <h1> 
 Jammy </h1>
-
+<p>
+	<img src="https://img.shields.io/badge/Laravel-12-red?style=for-the-badge&logo=laravel" />
+	<img src="https://img.shields.io/badge/PHP-8.2-blue?style=for-the-badge&logo=php" />
+	<img src="https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=for-the-badge&logo=tailwind-css" />
+	<img src="https://img.shields.io/badge/Vite-Build-646CFF?style=for-the-badge&logo=vite" />
+	<img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
+</p>
 A Laravel-based e‑commerce demo for a music gear store. Mostly focused on CRUD transactions and using dependencies for other features. It was made to support guests, customers, and admins.
 
 </div> 
