@@ -51,6 +51,8 @@ class AuthController extends Controller
         }
 
         $products = $builder
+            ->where('deleted_at', null)
+            ->where('is_active', 1)
             ->orderBy('product_name')
             ->paginate(12)
             ->appends($request->query());
@@ -88,15 +90,22 @@ class AuthController extends Controller
         }
 
         $categories = DB::table('categories')
+                ->where('is_active', 1)
+                ->where('deleted_at', null)
+                
             ->orderBy('category_name')
             ->get();
 
         $brands = DB::table('brands')
+            ->where('is_active', 1)
+            ->where('deleted_at', null)
             ->orderBy('brand_name')
             ->get();
 
         $typeOptions = DB::table('products')
             ->whereNotNull('model')
+            ->where('is_active', 1)
+            ->where('deleted_at', null)
             ->distinct()
             ->orderBy('model')
             ->pluck('model')

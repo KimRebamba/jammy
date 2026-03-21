@@ -7,10 +7,12 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    //products that are deleted should not show
     public function categories()
     {
         $categories = DB::table('categories')
             ->where('is_active', 1)
+            ->where('deleted_at', null)
             ->orderBy('category_name')
             ->get();
 
@@ -28,6 +30,8 @@ class ProductController extends Controller
             ->join('products as p', 'p.brand_id', '=', 'b.brand_id')
             ->where('p.category_id', $categoryId)
             ->where('p.is_active', 1)
+            ->where('p.deleted_at', null)
+            ->where('b.deleted_at', null)
             ->select('b.brand_id', 'b.brand_name', 'b.logo_url')
             ->distinct()
             ->orderBy('b.brand_name')
@@ -48,10 +52,26 @@ class ProductController extends Controller
             ->where('p.category_id', $categoryId)
             ->where('p.brand_id', $brandId)
             ->where('p.is_active', 1)
+            ->where('p.deleted_at', null)
             ->select('p.product_id', 'p.product_name', 'p.retail_price');
-
+        $search = $request->query('q');
+        $type = $request->query('type');
         $minPrice = $request->query('min_price');
         $maxPrice = $request->query('max_price');
+
+        if ($search !== null && $search !== '') {
+            $searchLike = '%' . $search . '%';
+            $query->where(function ($q) use ($searchLike) {
+                $q->where('p.product_name', 'like', $searchLike)
+                    ->orWhere('p.model', 'like', $searchLike)
+                    ->orWhere('p.description', 'like', $searchLike);
+            });
+        }
+
+        if ($type !== null && $type !== '') {
+            $typeLike = '%' . $type . '%';
+            $query->where('p.model', 'like', $typeLike);
+        }
 
         if ($minPrice !== null && $minPrice !== '') {
             $query->where('p.retail_price', '>=', (float) $minPrice);
@@ -84,6 +104,8 @@ class ProductController extends Controller
             ->leftJoin('categories as c', 'p.category_id', '=', 'c.category_id')
             ->where('p.product_id', $productId)
             ->where('p.is_active', 1)
+            ->where('p.deleted_at', null)
+            ->where('b.deleted_at', null)
             ->select(
                 'p.*',
                 'b.brand_name',
