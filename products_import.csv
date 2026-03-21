@@ -1,0 +1,11 @@
+product_name,brand_id,model,category_id,retail_price,cost_price,description,is_active,stock_level
+Samsung Galaxy S24,1,SM-S921B,1,54999.00,42000.00,6.2-inch Dynamic AMOLED display with 50MP camera,1,25
+Apple iPhone 15,2,A3090,1,64999.00,51000.00,6.1-inch Super Retina XDR display with A16 Bionic chip,1,30
+Sony WH-1000XM5,3,WH1000XM5,2,19999.00,13500.00,Industry-leading noise canceling wireless headphones,1,50
+Logitech MX Master 3S,4,910-006559,3,4999.00,3200.00,Advanced wireless mouse with ultra-fast scrolling,1,75
+ASUS ROG Strix G16,5,G614JU-N3200W,4,89999.00,70000.00,16-inch gaming laptop with RTX 4060 and Intel i7,1,10
+Samsung 27" Odyssey G5,1,LC27G55TQWNXZA,5,18999.00,13000.00,27-inch curved QHD 165Hz gaming monitor,1,20
+Razer BlackWidow V3,6,RZ03-03540100,3,7499.00,5000.00,Mechanical gaming keyboard with Razer Green switches,1,40
+Apple AirPods Pro 2,2,MTJV3LL/A,2,16999.00,12000.00,Active noise cancellation earbuds with Adaptive Audio,1,35
+Xiaomi Redmi Note 13,7,2312DRAAAG,1,12999.00,9000.00,6.67-inch AMOLED 120Hz display with 108MP camera,1,60
+Kingston 1TB NVMe SSD,8,SKC3000S/1024G,6,4299.00,2800.00,PCIe 4.0 NVMe M.2 SSD with speeds up to 7000MB/s,1,90

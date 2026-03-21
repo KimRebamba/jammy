@@ -20,6 +20,7 @@
 <p>Phone Number: {{ $account->phone_number }}</p>
 <p>Role: {{ $account->role }}</p>
 <p>Active: {{ $account->is_active ? 'Yes' : 'No' }}</p>
+<p>Verified: {{ $account->email_verified_at ? 'Yes' : 'No' }}</p>
 
 <p><a href="/admin/accounts/{{ $account->user_id }}/edit">Edit</a></p>
 <p><a href="/admin/accounts">Back to Accounts</a></p>

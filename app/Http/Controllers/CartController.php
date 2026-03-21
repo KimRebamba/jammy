@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderReceipt;
 
 class CartController extends Controller
 {
@@ -20,13 +22,18 @@ class CartController extends Controller
         if ($cart) {
             $items = DB::table('cart_product as cp')
                 ->leftJoin('products as p', 'cp.product_id', '=', 'p.product_id')
-                ->leftJoin('product_photos as pp', function ($join) {
-                    $join->on('p.product_id', '=', 'pp.product_id')
-                        ->where('pp.is_primary', true);
-                })
                 ->where('cp.cart_id', $cart->cart_id)
-                ->select('cp.cart_product_id', 'cp.product_id', 'cp.quantity', 'p.product_name', 'p.retail_price', 'pp.photo_url')
+                ->select('cp.cart_product_id', 'cp.product_id', 'cp.quantity', 'p.product_name', 'p.retail_price')
                 ->get();
+
+            foreach ($items as $item) {
+                $photo = DB::table('product_photos')
+                    ->where('product_id', $item->product_id)
+                    ->where('is_primary', 1)
+                    ->first();
+
+                $item->photo_url = $photo ? $photo->photo_url : null;
+            }
         }
 
         return view('customer.cart.index', compact('cart', 'items'));
@@ -299,7 +306,28 @@ class CartController extends Controller
             DB::rollBack();
             return redirect('/cart')->with('error', 'Failed to place order');
         }
+        $order = DB::table('orders')->where('order_id', $orderId)->first();
 
-        return redirect('/orders')->with('success', 'Order placed successfully');
+        $orderItems = DB::table('product_order as po')
+            ->join('products as p', 'po.product_id', '=', 'p.product_id')
+            ->where('po.order_id', $orderId)
+            ->select('p.product_name', 'po.quantity', 'po.unit_price')
+            ->get();
+
+        $customer = DB::table('accounts')->where('user_id', $user->id)->first();
+
+        if ($customer && $customer->email) {
+            Mail::to($customer->email)->send(
+                new OrderReceipt(
+                    $order,
+                    $orderItems,
+                    $customer,
+                    'Order Receipt',
+                    'Thank you for your order. Your receipt is attached as a PDF.'
+                )
+            );
+        }
+
+        return redirect('/orders')->with('success', 'Order placed successfully. A receipt has been sent to your email.');
     }
 }

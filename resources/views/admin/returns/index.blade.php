@@ -22,8 +22,12 @@
     </ul>
 @endif
 
+<form method="post" action="/admin/returns/batch">
+@csrf
+
 <table border="1" cellpadding="5">
 <tr>
+    <th>Select</th>
     <th>ID</th>
     <th>Order ID</th>
     <th>Reason</th>
@@ -35,6 +39,9 @@
 
 @foreach($returns as $return)
 <tr>
+    <td>
+        <input type="checkbox" name="selected_ids[]" value="{{ $return->ID }}">
+    </td>
     <td>{{ $return->ID }}</td>
     <td>{{ $return->OrderID }}</td>
     <td>
@@ -61,6 +68,12 @@
 @endforeach
 
 </table>
+
+<p>
+    <button type="submit">Delete Selected</button>
+</p>
+
+</form>
 
 <br>
 <a href="/admin/dashboard">Back</a>

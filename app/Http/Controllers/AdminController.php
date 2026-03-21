@@ -5,6 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderReceipt;
+use App\DataTables\AccountsDataTable;
+use App\DataTables\ProductsDataTable;
+use App\DataTables\OrdersDataTable;
+use App\DataTables\ReviewsDataTable;
+use App\Imports\ProductImport;
+use App\Charts\SalesCharts;
 
 class AdminController extends Controller
 {
@@ -15,19 +23,47 @@ class AdminController extends Controller
 
     public function accounts()
     {
-        $accounts = DB::table('accounts')
-            ->select(
-                'user_id as ID',
-                'username as Username',
-                'email as Email',
-                'profile_photo_url as Picture',
-                'role as Role',
-                'is_active as Active'
-            )
-            ->orderBy('user_id')
-            ->get();
+        $accounts = AccountsDataTable::get();
 
         return view('admin.accounts.index', compact('accounts'));
+    }
+
+    public function accountsBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+            'action' => 'required|in:delete,activate,deactivate',
+        ]);
+
+        $currentUserId = session('user') ? session('user')->id : null;
+
+        if ($data['action'] === 'delete') {
+            if ($currentUserId && in_array($currentUserId, $data['selected_ids'])) {
+                return redirect('/admin/accounts')->with('error', 'Cannot delete currently logged in account');
+            }
+
+            DB::table('accounts')
+                ->whereIn('user_id', $data['selected_ids'])
+                ->delete();
+
+            return redirect('/admin/accounts')->with('success', 'Selected accounts deleted');
+        }
+
+        $isActive = $data['action'] === 'activate' ? 1 : 0;
+
+        if ($currentUserId && in_array($currentUserId, $data['selected_ids']) && $isActive === 0) {
+            return redirect('/admin/accounts')->with('error', 'Cannot deactivate currently logged in account');
+        }
+
+        DB::table('accounts')
+            ->whereIn('user_id', $data['selected_ids'])
+            ->update([
+                'is_active' => $isActive,
+                'updated_at' => now(),
+            ]);
+
+        return redirect('/admin/accounts')->with('success', 'Selected accounts updated');
     }
 
     public function accountsCreate()
@@ -161,27 +197,31 @@ class AdminController extends Controller
 
     public function products()
     {
-        $products = DB::table('products as p')
-            ->leftJoin('brands as b', 'p.brand_id', '=', 'b.brand_id')
-            ->leftJoin('categories as c', 'p.category_id', '=', 'c.category_id')
-            ->leftJoin('product_photos as pp', function ($join) {
-                $join->on('p.product_id', '=', 'pp.product_id')
-                    ->where('pp.is_primary', true);
-            })
-            ->select(
-                'p.product_id as ID',
-                'p.product_name as Product',
-                'b.brand_name as Brand',
-                'c.category_name as Category',
-                'p.model as Model',
-                'p.retail_price as Price',
-                'p.stock_level as Stock',
-                'pp.photo_url as Image'
-            )
-            ->orderBy('p.product_id')
-            ->get();
+        $products = ProductsDataTable::get();
 
         return view('admin.products.index', compact('products'));
+    }
+
+    public function productsImport(Request $request)
+    {
+        $data = $request->validate([
+            'product_upload' => 'required|file',
+        ]);
+
+        $file = $request->file('product_upload');
+
+        if (!$file->isValid()) {
+            return redirect('/admin/products')->with('error', 'Invalid upload');
+        }
+
+        $importer = new ProductImport();
+        $importedCount = $importer->importFromCsv($file->getRealPath());
+
+        if ($importedCount === 0) {
+            return redirect('/admin/products')->with('error', 'No products imported from file');
+        }
+
+        return redirect('/admin/products')->with('success', 'Products imported successfully');
     }
 
     public function productsCreate()
@@ -275,16 +315,11 @@ class AdminController extends Controller
         $product = DB::table('products as p')
             ->leftJoin('brands as b', 'p.brand_id', '=', 'b.brand_id')
             ->leftJoin('categories as c', 'p.category_id', '=', 'c.category_id')
-            ->leftJoin('product_photos as pp', function ($join) {
-                $join->on('p.product_id', '=', 'pp.product_id')
-                    ->where('pp.is_primary', true);
-            })
             ->where('p.product_id', $id)
             ->select(
                 'p.*',
                 'b.brand_name',
-                'c.category_name',
-                'pp.photo_url as primary_photo'
+                'c.category_name'
             )
             ->first();
 
@@ -297,6 +332,13 @@ class AdminController extends Controller
             ->orderByDesc('is_primary')
             ->orderBy('sort_order')
             ->get();
+
+        $primaryPhoto = DB::table('product_photos')
+            ->where('product_id', $id)
+            ->where('is_primary', 1)
+            ->first();
+
+        $product->primary_photo = $primaryPhoto ? $primaryPhoto->photo_url : null;
 
         return view('admin.products.show', compact('product', 'photos'));
     }
@@ -431,6 +473,38 @@ class AdminController extends Controller
 
         DB::table('products')->where('product_id', $id)->delete();
         return redirect('/admin/products')->with('success', 'Product deleted successfully');
+    }
+
+    public function productsBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach ($data['selected_ids'] as $productId) {
+            $hasOrders = DB::table('product_order')->where('product_id', $productId)->exists();
+            if ($hasOrders) {
+                $skipped++;
+                continue;
+            }
+
+            DB::table('products')->where('product_id', $productId)->delete();
+            $deleted++;
+        }
+
+        if ($deleted && $skipped) {
+            return redirect('/admin/products')->with('success', "$deleted products deleted, $skipped skipped because they have orders");
+        }
+
+        if ($deleted) {
+            return redirect('/admin/products')->with('success', 'Selected products deleted');
+        }
+
+        return redirect('/admin/products')->with('error', 'No products deleted (all selected have orders)');
     }
 
     public function productPhotoDelete($productId, $photoId)
@@ -626,24 +700,23 @@ class AdminController extends Controller
         return redirect('/admin/categories')->with('success', 'Category deleted successfully');
     }
 
+    public function categoriesBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('categories')
+            ->whereIn('category_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/categories')->with('success', 'Selected categories deleted');
+    }
+
     public function orders()
     {
-        $orders = DB::table('orders as o')
-            ->leftJoin('accounts as a', 'o.user_id', '=', 'a.user_id')
-            ->leftJoin('product_order as po', 'o.order_id', '=', 'po.order_id')
-            ->leftJoin('products as p', 'po.product_id', '=', 'p.product_id')
-            ->select(
-                'o.order_id as ID',
-                'a.username as Customer',
-                'o.payment_status as Payment',
-                'o.order_status as Status',
-                'o.delivery_fee as Delivery',
-                'o.date_ordered as Date',
-                DB::raw('GROUP_CONCAT(CONCAT(p.product_name, " x", po.quantity) SEPARATOR ", ") as Items')
-            )
-            ->groupBy('o.order_id', 'a.username', 'o.payment_status', 'o.order_status', 'o.delivery_fee', 'o.date_ordered')
-            ->orderBy('o.order_id')
-            ->get();
+        $orders = OrdersDataTable::get();
 
         return view('admin.orders.index', compact('orders'));
     }
@@ -700,13 +773,53 @@ class AdminController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect('/admin/orders')->with('success', 'Order updated successfully');
+        $updatedOrder = DB::table('orders')->where('order_id', $id)->first();
+
+        $orderItems = DB::table('product_order as po')
+            ->join('products as p', 'po.product_id', '=', 'p.product_id')
+            ->where('po.order_id', $id)
+            ->select('p.product_name', 'po.quantity', 'po.unit_price')
+            ->get();
+
+        $customer = null;
+        if ($updatedOrder && $updatedOrder->user_id) {
+            $customer = DB::table('accounts')->where('user_id', $updatedOrder->user_id)->first();
+        }
+
+        if ($customer && $customer->email) {
+            $msg = 'The status of your order has been updated. Please see the attached PDF receipt for details.';
+            Mail::to($customer->email)->send(
+                new OrderReceipt(
+                    $updatedOrder,
+                    $orderItems,
+                    $customer,
+                    'Order Status Updated',
+                    $msg
+                )
+            );
+        }
+
+        return redirect('/admin/orders')->with('success', 'Order updated successfully and email sent to customer');
     }
 
     public function ordersDelete($id)
     {
         DB::table('orders')->where('order_id', $id)->delete();
         return redirect('/admin/orders')->with('success', 'Order deleted successfully');
+    }
+
+    public function ordersBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('orders')
+            ->whereIn('order_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/orders')->with('success', 'Selected orders deleted');
     }
 
     public function returns()
@@ -777,21 +890,23 @@ class AdminController extends Controller
         return redirect('/admin/returns')->with('success', 'Return deleted successfully');
     }
 
+    public function returnsBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('order_return')
+            ->whereIn('order_return_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/returns')->with('success', 'Selected returns deleted');
+    }
+
     public function reviews()
     {
-        $reviews = DB::table('product_review as pr')
-            ->leftJoin('accounts as a', 'pr.user_id', '=', 'a.user_id')
-            ->leftJoin('product_order as po', 'pr.product_order_id', '=', 'po.product_order_id')
-            ->leftJoin('products as p', 'po.product_id', '=', 'p.product_id')
-            ->select(
-                'pr.review_id as ID',
-                'a.username as Customer',
-                'p.product_name as Product',
-                'pr.rating as Rating',
-                'pr.is_verified as Verified'
-            )
-            ->orderBy('pr.review_id')
-            ->get();
+        $reviews = ReviewsDataTable::get();
 
         return view('admin.reviews.index', compact('reviews'));
     }
@@ -845,6 +960,20 @@ class AdminController extends Controller
     {
         DB::table('product_review')->where('review_id', $id)->delete();
         return redirect('/admin/reviews')->with('success', 'Review deleted successfully');
+    }
+
+    public function reviewsBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('product_review')
+            ->whereIn('review_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/reviews')->with('success', 'Selected reviews deleted');
     }
 
 
@@ -972,6 +1101,20 @@ class AdminController extends Controller
         return redirect('/admin/employees')->with('success', 'Employee deleted successfully');
     }
 
+    public function employeesBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('employees')
+            ->whereIn('emp_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/employees')->with('success', 'Selected employees deleted');
+    }
+
 
     public function positions()
     {
@@ -1052,6 +1195,20 @@ class AdminController extends Controller
     {
         DB::table('positions')->where('position_id', $id)->delete();
         return redirect('/admin/positions')->with('success', 'Position deleted successfully');
+    }
+
+    public function positionsBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('positions')
+            ->whereIn('position_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/positions')->with('success', 'Selected positions deleted');
     }
 
 
@@ -1152,6 +1309,20 @@ class AdminController extends Controller
     {
         DB::table('expenses')->where('exp_id', $id)->delete();
         return redirect('/admin/expenses')->with('success', 'Expense deleted successfully');
+    }
+
+    public function expensesBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('expenses')
+            ->whereIn('exp_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/expenses')->with('success', 'Selected expenses deleted');
     }
 
     public function salaries()
@@ -1272,6 +1443,20 @@ class AdminController extends Controller
         return redirect('/admin/salaries')->with('success', 'Salary deleted successfully');
     }
 
+    public function salariesBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
+
+        DB::table('salaries')
+            ->whereIn('salary_id', $data['selected_ids'])
+            ->delete();
+
+        return redirect('/admin/salaries')->with('success', 'Selected salaries deleted');
+    }
+
     public function brands()
     {
         $brands = DB::table('brands')
@@ -1383,33 +1568,75 @@ class AdminController extends Controller
         return redirect('/admin/brands')->with('success', 'Brand deleted successfully');
     }
 
+    public function brandsBatch(Request $request)
+    {
+        $data = $request->validate([
+            'selected_ids' => 'required|array',
+            'selected_ids.*' => 'integer',
+        ]);
 
-    public function reports()
-{
-    $totalSales = DB::table('product_order')
-        ->select(DB::raw('SUM(quantity * unit_price) as total'))
-        ->first();
+        DB::table('brands')
+            ->whereIn('brand_id', $data['selected_ids'])
+            ->delete();
 
-    $totalExpenses = DB::table('expenses')
-        ->where('status','paid')
-        ->sum('amount');
+        return redirect('/admin/brands')->with('success', 'Selected brands deleted');
+    }
 
-    $totalOrders = DB::table('orders')->count();
-    $totalProducts = DB::table('products')->count();
-    $totalCustomers = DB::table('accounts')
-        ->where('role','customer')
-        ->count();
 
-    $totalEmployees = DB::table('employees')->count();
+    public function reports(Request $request)
+    {
+        $totalSales = DB::table('product_order')
+            ->select(DB::raw('SUM(quantity * unit_price) as total'))
+            ->first();
 
-    return view('admin.reports', compact(
-        'totalSales',
-        'totalExpenses',
-        'totalOrders',
-        'totalProducts',
-        'totalCustomers',
-        'totalEmployees'
-    ));
-}
+        $totalExpenses = DB::table('expenses')
+            ->where('status', 'paid')
+            ->sum('amount');
+
+        $totalOrders = DB::table('orders')->count();
+        $totalProducts = DB::table('products')->count();
+        $totalCustomers = DB::table('accounts')
+            ->where('role', 'customer')
+            ->count();
+
+        $totalEmployees = DB::table('employees')->count();
+
+        $yearly = SalesCharts::yearlySales();
+        $yearlySalesLabels = $yearly['labels'];
+        $yearlySalesData = $yearly['data'];
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        if (!$startDate || !$endDate) {
+            $endDate = date('Y-m-d');
+            $startDate = date('Y-m-d', strtotime('-30 days', strtotime($endDate)));
+        }
+
+        $range = SalesCharts::rangeSales($startDate, $endDate);
+        $rangeLabels = $range['labels'];
+        $rangeData = $range['data'];
+
+        $product = SalesCharts::productSales();
+        $productLabels = $product['labels'];
+        $productData = $product['data'];
+
+        return view('admin.reports', compact(
+            'totalSales',
+            'totalExpenses',
+            'totalOrders',
+            'totalProducts',
+            'totalCustomers',
+            'totalEmployees',
+            'yearlySalesLabels',
+            'yearlySalesData',
+            'rangeLabels',
+            'rangeData',
+            'startDate',
+            'endDate',
+            'productLabels',
+            'productData'
+        ));
+    }
 
 }

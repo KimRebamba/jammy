@@ -24,6 +24,8 @@
 </form>
 
 <br>
+    <a href="/register">Register</a>
+    <br>
     <a href="/home">Back to Home</a>
 </body>
 </html>

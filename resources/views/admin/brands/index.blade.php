@@ -24,8 +24,12 @@
 
 <p><a href="/admin/brands/create">Add Brand</a></p>
 
+<form method="post" action="/admin/brands/batch">
+@csrf
+
 <table border="1" cellpadding="5">
 <tr>
+    <th>Select</th>
     <th>ID</th>
     <th>Logo</th>
     <th>Brand</th>
@@ -36,6 +40,9 @@
 
 @foreach($brands as $brand)
 <tr>
+    <td>
+        <input type="checkbox" name="selected_ids[]" value="{{ $brand->ID }}">
+    </td>
     <td>{{ $brand->ID }}</td>
     <td>
         @if($brand->Logo)
@@ -56,6 +63,12 @@
 </tr>
 @endforeach
 </table>
+
+<p>
+    <button type="submit">Delete Selected</button>
+</p>
+
+</form>
 
 <br>
 <a href="/admin/dashboard">Back</a>

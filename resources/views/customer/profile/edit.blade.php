@@ -28,7 +28,7 @@
     <p><strong>Username:</strong> {{ $account->username }}</p>
     <p><strong>Email:</strong> {{ $account->email }}</p>
 
-    <form action="/customer/profile/update" method="post">
+    <form action="/customer/profile/update" method="post" enctype="multipart/form-data">
         @csrf
         <p>
             <label>First Name:</label>
@@ -46,6 +46,12 @@
             <label>Phone:</label>
             <input type="text" name="phone_number" value="{{ old('phone_number', $account->phone_number) }}">
         </p>
+
+		<p>
+			<label>Profile Photo:</label>
+			<input type="file" name="profile_photo">
+		</p>
+
         <p>
             <button type="submit">Save</button>
         </p>

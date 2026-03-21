@@ -24,17 +24,24 @@
 
 <p><a href="/admin/categories/create">Add Category</a></p>
 
+<form method="post" action="/admin/categories/batch">
+@csrf
+
 <table border="1" cellpadding="5">
 <tr>
+    <th>Select</th>
     <th>ID</th>
     <th>Image</th>
     <th>Category</th>
     <th>Active</th>
     <th>Actions</th>
-</tr>
+    </tr>
 
 @foreach($categories as $category)
 <tr>
+    <td>
+        <input type="checkbox" name="selected_ids[]" value="{{ $category->ID }}">
+    </td>
     <td>{{ $category->ID }}</td>
     <td>
         @if($category->Image)
@@ -54,6 +61,12 @@
 </tr>
 @endforeach
 </table>
+
+<p>
+    <button type="submit">Delete Selected</button>
+</p>
+
+</form>
 
 <br>
 

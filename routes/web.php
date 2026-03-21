@@ -10,13 +10,22 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'home');
-Route::get('/home', [AuthCOntroller::class, 'home']);
+Route::get('/', [AuthController::class, 'home']);
+Route::get('/home', [AuthController::class, 'home']);
 
 Route::middleware(['guest.custom'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/register', [AuthController::class, 'showRegister']);
+    Route::post('/register', [AuthController::class, 'register']);
 });
+
+Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail']);
+
+    Route::get('/shop', [ProductController::class, 'categories']);
+    Route::get('/shop/categories/{category}', [ProductController::class, 'brandsForCategory']);
+    Route::get('/shop/categories/{category}/brands/{brand}', [ProductController::class, 'productsForBrandAndCategory']);
+    Route::get('/shop/products/{product}', [ProductController::class, 'productShow']);
 
 Route::middleware(['customer'])->group(function(){
     Route::get('/customer/index', [CustomerController::class, 'index']);
@@ -25,10 +34,6 @@ Route::middleware(['customer'])->group(function(){
     Route::get('/customer/profile/edit', [ProfileController::class, 'edit']);
     Route::post('/customer/profile/update', [ProfileController::class, 'update']);
 
-    Route::get('/shop', [ProductController::class, 'categories']);
-    Route::get('/shop/categories/{category}', [ProductController::class, 'brandsForCategory']);
-    Route::get('/shop/categories/{category}/brands/{brand}', [ProductController::class, 'productsForBrandAndCategory']);
-    Route::get('/shop/products/{product}', [ProductController::class, 'productShow']);
 
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
@@ -56,6 +61,7 @@ Route::middleware(['admin'])->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
 
     Route::get('/admin/accounts', [AdminController::class, 'accounts']);
+    Route::post('/admin/accounts/batch', [AdminController::class, 'accountsBatch']);
     Route::get('/admin/accounts/create', [AdminController::class, 'accountsCreate']);
     Route::post('/admin/accounts', [AdminController::class, 'accountsStore']);
     Route::get('/admin/accounts/{id}', [AdminController::class, 'accountsShow']);
@@ -66,10 +72,12 @@ Route::middleware(['admin'])->group(function () {
     Route::get('/admin/products', [AdminController::class, 'products']);
     Route::get('/admin/products/create', [AdminController::class, 'productsCreate']);
     Route::post('/admin/products', [AdminController::class, 'productsStore']);
+    Route::post('/admin/products/import', [AdminController::class, 'productsImport']);
     Route::get('/admin/products/{id}', [AdminController::class, 'productsShow']);
     Route::get('/admin/products/{id}/edit', [AdminController::class, 'productsEdit']);
     Route::post('/admin/products/{id}/update', [AdminController::class, 'productsUpdate']);
     Route::post('/admin/products/{id}/delete', [AdminController::class, 'productsDelete']);
+    Route::post('/admin/products/batch', [AdminController::class, 'productsBatch']);
     Route::get('/admin/products/{product}/photos/{photo}/replace', [AdminController::class, 'productPhotoReplaceForm']);
     Route::post('/admin/products/{product}/photos/{photo}/delete', [AdminController::class, 'productPhotoDelete']);
     Route::post('/admin/products/{product}/photos/{photo}/replace', [AdminController::class, 'productPhotoReplace']);
@@ -80,18 +88,21 @@ Route::middleware(['admin'])->group(function () {
     Route::get('/admin/orders/{id}/edit', [AdminController::class, 'ordersEdit']);
     Route::post('/admin/orders/{id}/update', [AdminController::class, 'ordersUpdate']);
     Route::post('/admin/orders/{id}/delete', [AdminController::class, 'ordersDelete']);
+    Route::post('/admin/orders/batch', [AdminController::class, 'ordersBatch']);
 
     Route::get('/admin/returns', [AdminController::class, 'returns']);
     Route::get('/admin/returns/{id}', [AdminController::class, 'returnsShow']);
     Route::get('/admin/returns/{id}/edit', [AdminController::class, 'returnsEdit']);
     Route::post('/admin/returns/{id}/update', [AdminController::class, 'returnsUpdate']);
     Route::post('/admin/returns/{id}/delete', [AdminController::class, 'returnsDelete']);
+    Route::post('/admin/returns/batch', [AdminController::class, 'returnsBatch']);
 
     Route::get('/admin/reviews', [AdminController::class, 'reviews']);
     Route::get('/admin/reviews/{id}', [AdminController::class, 'reviewsShow']);
     Route::get('/admin/reviews/{id}/edit', [AdminController::class, 'reviewsEdit']);
     Route::post('/admin/reviews/{id}/update', [AdminController::class, 'reviewsUpdate']);
     Route::post('/admin/reviews/{id}/delete', [AdminController::class, 'reviewsDelete']);
+    Route::post('/admin/reviews/batch', [AdminController::class, 'reviewsBatch']);
 
     Route::get('/admin/employees', [AdminController::class, 'employees']);
     Route::get('/admin/employees/create', [AdminController::class, 'employeesCreate']);
@@ -101,6 +112,8 @@ Route::middleware(['admin'])->group(function () {
     Route::post('/admin/employees/{id}/update', [AdminController::class, 'employeesUpdate']);
     Route::post('/admin/employees/{id}/delete', [AdminController::class, 'employeesDelete']);
 
+    Route::post('/admin/employees/batch', [AdminController::class, 'employeesBatch']);
+
     Route::get('/admin/positions', [AdminController::class, 'positions']);
     Route::get('/admin/positions/create', [AdminController::class, 'positionsCreate']);
     Route::post('/admin/positions', [AdminController::class, 'positionsStore']);
@@ -108,6 +121,8 @@ Route::middleware(['admin'])->group(function () {
     Route::get('/admin/positions/{id}/edit', [AdminController::class, 'positionsEdit']);
     Route::post('/admin/positions/{id}/update', [AdminController::class, 'positionsUpdate']);
     Route::post('/admin/positions/{id}/delete', [AdminController::class, 'positionsDelete']);
+
+    Route::post('/admin/positions/batch', [AdminController::class, 'positionsBatch']);
 
     Route::get('/admin/expenses', [AdminController::class, 'expenses']);
     Route::get('/admin/expenses/create', [AdminController::class, 'expensesCreate']);
@@ -117,6 +132,8 @@ Route::middleware(['admin'])->group(function () {
     Route::post('/admin/expenses/{id}/update', [AdminController::class, 'expensesUpdate']);
     Route::post('/admin/expenses/{id}/delete', [AdminController::class, 'expensesDelete']);
 
+    Route::post('/admin/expenses/batch', [AdminController::class, 'expensesBatch']);
+
     Route::get('/admin/categories', [AdminController::class, 'categories']);
     Route::get('/admin/categories/create', [AdminController::class, 'categoriesCreate']);
     Route::post('/admin/categories', [AdminController::class, 'categoriesStore']);
@@ -124,6 +141,8 @@ Route::middleware(['admin'])->group(function () {
     Route::get('/admin/categories/{id}/edit', [AdminController::class, 'categoriesEdit']);
     Route::post('/admin/categories/{id}/update', [AdminController::class, 'categoriesUpdate']);
     Route::post('/admin/categories/{id}/delete', [AdminController::class, 'categoriesDelete']);
+
+    Route::post('/admin/categories/batch', [AdminController::class, 'categoriesBatch']);
 
     Route::get('/admin/salaries', [AdminController::class, 'salaries']);
     Route::get('/admin/salaries/create', [AdminController::class, 'salariesCreate']);
@@ -133,6 +152,8 @@ Route::middleware(['admin'])->group(function () {
     Route::post('/admin/salaries/{id}/update', [AdminController::class, 'salariesUpdate']);
     Route::post('/admin/salaries/{id}/delete', [AdminController::class, 'salariesDelete']);
 
+    Route::post('/admin/salaries/batch', [AdminController::class, 'salariesBatch']);
+
     Route::get('/admin/brands', [AdminController::class, 'brands']);
     Route::get('/admin/brands/create', [AdminController::class, 'brandsCreate']);
     Route::post('/admin/brands', [AdminController::class, 'brandsStore']);
@@ -140,6 +161,8 @@ Route::middleware(['admin'])->group(function () {
     Route::get('/admin/brands/{id}/edit', [AdminController::class, 'brandsEdit']);
     Route::post('/admin/brands/{id}/update', [AdminController::class, 'brandsUpdate']);
     Route::post('/admin/brands/{id}/delete', [AdminController::class, 'brandsDelete']);
+
+    Route::post('/admin/brands/batch', [AdminController::class, 'brandsBatch']);
 
     Route::get('/admin/reports', [AdminController::class, 'reports']);
 });

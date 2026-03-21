@@ -13,7 +13,7 @@ class OrderController extends Controller
         if (!$user) {
             return redirect('/login');
         }
-        // Load orders for the current customer
+        
         $orders = DB::table('orders')
             ->where('user_id', $user->id)
             ->orderBy('date_ordered', 'desc')
@@ -23,7 +23,7 @@ class OrderController extends Controller
             return view('customer.orders.index', compact('orders'));
         }
 
-        // Load items for these orders and build a simple items string per order
+        
         $orderIds = $orders->pluck('order_id')->all();
 
         $lines = DB::table('product_order as po')
@@ -68,13 +68,18 @@ class OrderController extends Controller
 
         $items = DB::table('product_order as po')
             ->leftJoin('products as p', 'po.product_id', '=', 'p.product_id')
-            ->leftJoin('product_photos as pp', function ($join) {
-                $join->on('p.product_id', '=', 'pp.product_id')
-                    ->where('pp.is_primary', true);
-            })
             ->where('po.order_id', $id)
-            ->select('p.product_name', 'po.quantity', 'po.unit_price', 'pp.photo_url')
+            ->select('p.product_id', 'p.product_name', 'po.quantity', 'po.unit_price')
             ->get();
+
+        foreach ($items as $item) {
+            $photo = DB::table('product_photos')
+                ->where('product_id', $item->product_id)
+                ->where('is_primary', 1)
+                ->first();
+
+            $item->photo_url = $photo ? $photo->photo_url : null;
+        }
 
         return view('customer.orders.show', compact('order', 'items'));
     }

@@ -24,8 +24,12 @@
 
 <p><a href="/admin/expenses/create">Add Expense</a></p>
 
+<form method="post" action="/admin/expenses/batch">
+@csrf
+
 <table border="1" cellpadding="5">
 <tr>
+    <th>Select</th>
     <th>ID</th>
     <th>Type</th>
     <th>Amount</th>
@@ -36,6 +40,9 @@
 
 @foreach($expenses as $expense)
 <tr>
+    <td>
+        <input type="checkbox" name="selected_ids[]" value="{{ $expense->ID }}">
+    </td>
     <td>{{ $expense->ID }}</td>
     <td>{{ $expense->Type }}</td>
     <td>{{ $expense->Amount }}</td>
@@ -53,6 +60,12 @@
 @endforeach
 
 </table>
+
+<p>
+    <button type="submit">Delete Selected</button>
+</p>
+
+</form>
 
 <br>
 <a href="/admin/dashboard">Back</a>

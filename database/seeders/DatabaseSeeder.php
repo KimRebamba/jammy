@@ -180,6 +180,86 @@ class DatabaseSeeder extends Seeder
                 'updated_at'=>now(),
             ]
         ]);
+
+        DB::table('salaries')->insert([
+            [
+                'emp_id' => 1,
+                'pay_date' => Carbon::now()->subMonth(),
+                'rate_used' => 35000,
+                'status' => 'paid',
+                'from_date' => Carbon::now()->subMonths(2)->startOfMonth(),
+                'to_date' => Carbon::now()->subMonths(1)->endOfMonth(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'emp_id' => 2,
+                'pay_date' => Carbon::now()->subMonth(),
+                'rate_used' => 18000,
+                'status' => 'paid',
+                'from_date' => Carbon::now()->subMonths(2)->startOfMonth(),
+                'to_date' => Carbon::now()->subMonths(1)->endOfMonth(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('expenses')->insert([
+            [
+                'expense_type' => 'inventory_purchase',
+                'description' => 'Initial stock purchase',
+                'amount' => 500000,
+                'status' => 'paid',
+                'due_date' => Carbon::now()->subMonths(2)->startOfMonth(),
+                'paid_date' => Carbon::now()->subMonths(2)->endOfMonth(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'expense_type' => 'rent',
+                'description' => 'Store rent',
+                'amount' => 30000,
+                'status' => 'paid',
+                'due_date' => Carbon::now()->subMonth()->startOfMonth(),
+                'paid_date' => Carbon::now()->subMonth()->endOfMonth(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('cart')->insert([
+            [
+                'user_id' => 2,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('cart_product')->insert([
+            [
+                'cart_id' => 1,
+                'product_id' => 1,
+                'quantity' => 1,
+            ],
+            [
+                'cart_id' => 1,
+                'product_id' => 3,
+                'quantity' => 2,
+            ],
+        ]);
+
+        DB::table('order_return')->insert([
+            [
+                'order_id' => 1,
+                'reason' => 'Changed mind',
+                'cond' => 'opened',
+                'return_status' => 'processed',
+                'refund_amount' => 20000,
+                'processed_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
     }
 }
 

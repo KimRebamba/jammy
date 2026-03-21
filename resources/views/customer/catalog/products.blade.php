@@ -14,6 +14,15 @@
     <p style="color:red;">{{ session('error') }}</p>
 @endif
 
+<h3>Filter by Price</h3>
+<form method="GET" action="/shop/categories/{{ $category->category_id }}/brands/{{ $brand->brand_id }}">
+    <p>
+        Min Price: <input type="text" name="min_price" value="{{ request('min_price') }}">
+        Max Price: <input type="text" name="max_price" value="{{ request('max_price') }}">
+        <button type="submit">Apply Filter</button>
+    </p>
+</form>
+
 <table border="1" cellpadding="5" cellspacing="0">
     <tr>
         <th>Image</th>

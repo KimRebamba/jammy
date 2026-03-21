@@ -24,8 +24,12 @@
 
 <p><a href="/admin/positions/create">Add Position</a></p>
 
+<form method="post" action="/admin/positions/batch">
+@csrf
+
 <table border="1" cellpadding="5">
 <tr>
+    <th>Select</th>
     <th>ID</th>
     <th>Position</th>
     <th>Monthly Salary</th>
@@ -34,6 +38,9 @@
 
 @foreach($positions as $position)
 <tr>
+    <td>
+        <input type="checkbox" name="selected_ids[]" value="{{ $position->ID }}">
+    </td>
     <td>{{ $position->ID }}</td>
     <td>{{ $position->Position }}</td>
     <td>{{ $position->Salary }}</td>
@@ -49,6 +56,12 @@
 @endforeach
 
 </table>
+
+<p>
+    <button type="submit">Delete Selected</button>
+</p>
+
+</form>
 
 <br>
 <a href="/admin/dashboard">Back</a>

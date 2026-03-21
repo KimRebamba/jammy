@@ -24,8 +24,12 @@
 
 <p><a href="/admin/salaries/create">Add Salary</a></p>
 
+<form method="post" action="/admin/salaries/batch">
+@csrf
+
 <table border="1" cellpadding="5">
 <tr>
+    <th>Select</th>
     <th>ID</th>
     <th>Employee</th>
     <th>Pay Date</th>
@@ -36,6 +40,9 @@
 
 @foreach($salaries as $salary)
 <tr>
+    <td>
+        <input type="checkbox" name="selected_ids[]" value="{{ $salary->ID }}">
+    </td>
     <td>{{ $salary->ID }}</td>
     <td>{{ $salary->Employee }}</td>
     <td>{{ $salary->PayDate }}</td>
@@ -52,6 +59,12 @@
 </tr>
 @endforeach
 </table>
+
+<p>
+    <button type="submit">Delete Selected</button>
+</p>
+
+</form>
 
 <br>
 <a href="/admin/dashboard">Back</a>
