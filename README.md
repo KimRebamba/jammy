@@ -1,6 +1,7 @@
 <div align="center"> 
-
-<h1> <img src="public/guitar-solid-full.svg" alt="Jammy logo" width="120" /> Jammy </h1>
+	
+<h1> <img src="public/guitar-solid-full.svg" alt="Jammy logo"/>
+Jammy </h1>
 
 A Laravel-based e‑commerce demo for a music gear store. Mostly focused on CRUD transactions and using dependencies for other features. It was made to support guests, customers, and admins.
 
