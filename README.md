@@ -1,6 +1,6 @@
 <div align="center"> 
 <h1>
-	<img src="public/logo-readme.svg" alt="Jammy logo" width="210"/>
+	<img src="public/logo-readme.svg" alt="Jammy logo" width="200"/>
 </h1>
 <p>
 	<img src="https://img.shields.io/badge/Laravel-12-red?style=for-the-badge&logo=laravel" />
