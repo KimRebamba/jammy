@@ -131,10 +131,28 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+
+    $length_username = strlen($request->username);
+    $length_password = strlen($request->password);
+   
+    if($length_username == 0 || $length_password == 0){
+        return back()->with('error', 'Username and Password are required');
+    }
+
         $request->validate([
             'username' => 'required',
             'password' => 'required'
         ]);
+
+    
+
+    if($length_username > 15){
+        return back()->with('error', '15 Character Max Limit');
+    }
+
+    if($length_password < 4){
+        return back()->with('error', 'Minimum 4 Characters Password');
+    }
 
         $user = DB::table('accounts')
             ->select(
@@ -181,7 +199,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $data = $request->validate([
-            'username' => 'required|string|max:50|unique:accounts,username',
+            'username' => 'required|string|max:15|unique:accounts,username',
             'email' => 'required|email|max:100|unique:accounts,email',
             'password' => 'required|string|min:4|confirmed',
             'first_name' => 'nullable|string|max:50',

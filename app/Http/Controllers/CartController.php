@@ -318,15 +318,15 @@ class CartController extends Controller
 
         if ($customer && $customer->email) {
             //sendMailReceipt
-            // Mail::to($customer->email)->send(
-            //     new OrderReceipt(
-            //         $order,
-            //         $orderItems,
-            //         $customer,
-            //         'Order Receipt',
-            //         'Thank you for your order. Your receipt is attached as a PDF.'
-            //     )
-            // );
+            Mail::to($customer->email)->send(
+                new OrderReceipt(
+                    $order,
+                    $orderItems,
+                    $customer,
+                    'Order Receipt',
+                    'Thank you for your order. Your receipt is attached as a PDF.'
+                )
+            );
         }
 
         return redirect('/orders')->with('success', 'Order placed successfully. A receipt has been sent to your email.');

@@ -69,6 +69,9 @@ class ReviewController extends Controller
             'review_text' => 'nullable|string',
         ]);
 
+        $data['review_title'] = $this->mask_bad_words($data['review_title'] ?? null);
+        $data['review_text'] = $this->mask_bad_words($data['review_text'] ?? null);
+
         DB::table('product_review')
             ->where('review_id', $id)
             ->update([

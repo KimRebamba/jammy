@@ -33,7 +33,7 @@ mp6 filter 15pts
 mp7 charts 15pts
    charts yearly sales 8pts
    sales bar chart with date range (date picker).
-    A pie chart showing the percentage of total sales contributed by each product. 15pts
+   A pie chart showing the percentage of total sales contributed by each product. 15pts
 
 mp8 search 15pts
    search products on home page(no datatable search). use LIKE query 8pts

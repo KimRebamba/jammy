@@ -276,6 +276,9 @@ $price = DB::table('product_order')
             'review_text' => 'nullable|string',
         ]);
 
+        $data['review_title'] = $this->mask_bad_words($data['review_title'] ?? null);
+        $data['review_text'] = $this->mask_bad_words($data['review_text'] ?? null);
+
         $line = DB::table('product_order as po')
             ->leftJoin('product_review as pr', function ($join) use ($user) {
                 $join->on('pr.product_order_id', '=', 'po.product_order_id')

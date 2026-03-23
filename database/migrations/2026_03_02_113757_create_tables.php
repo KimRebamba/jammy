@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('last_name', 50)->nullable();
             $table->string('profile_photo_url')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->timestamp('email_verified_at')->nullable()->after('is_active');
-            $table->string('verification_token', 100)->nullable()->after('email_verified_at');
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('verification_token', 100)->nullable();
             $table->timestamps(); 
             $table->softDeletes(); 
 

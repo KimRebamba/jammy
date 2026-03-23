@@ -862,15 +862,15 @@ class AdminController extends Controller
             $msg = 'The status of your order has been updated. Please see the attached PDF receipt for details.';
 
             //sendMailUpdate
-            // Mail::to($customer->email)->send(
-            //     new OrderReceipt(
-            //         $updatedOrder,
-            //         $orderItems,
-            //         $customer,
-            //         'Order Status Updated',
-            //         $msg
-            //     )
-            // );
+            Mail::to($customer->email)->send(
+                new OrderReceipt(
+                    $updatedOrder,
+                    $orderItems,
+                    $customer,
+                    'Order Status Updated',
+                    $msg
+                )
+            );
         }
 
         return redirect('/admin/orders')->with('success', 'Order updated successfully and email sent to customer');

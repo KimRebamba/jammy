@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
         DB::table('accounts')->insert([
             [
                 'username' => 'admin',
-                'password' => Hash::make('admin123'),
+                'password' => Hash::make('1234'),
                 'email' => 'admin@musicstore.com',
                 'role' => 'admin',
                 'first_name' => 'Store',
@@ -24,10 +24,11 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
+                'email_verified_at' => now()
             ],
             [
                 'username' => 'customer1',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('1234'),
                 'email' => 'customer1@email.com',
                 'role' => 'customer',
                 'first_name' => 'Juan',
@@ -36,6 +37,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
+                'email_verified_at' => now()
             ]
         ]);
 
