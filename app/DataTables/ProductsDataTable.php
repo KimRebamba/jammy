@@ -11,8 +11,7 @@ class ProductsDataTable extends DataTable
 {
     public function dataTable($query)
     {
-		// Products query currently returns a collection, so use the
-		// collection-based factory instead of query() to avoid errors.
+		
 		return datatables()->collection($query)
             ->addColumn('select', function ($row) {
                 return '<input type="checkbox" name="selected_ids[]" value="' . e($row->id) . '" class="rounded border-slate-600 bg-slate-900">';
